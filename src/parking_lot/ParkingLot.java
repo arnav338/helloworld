@@ -1,11 +1,13 @@
 package parking_lot;
 
 import parking_lot.dto.Level;
+import parking_lot.dto.Ticket;
 import parking_lot.enums.VehicleType;
 import parking_lot.util.LoaderUtil;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class ParkingLot {
 
@@ -85,9 +87,9 @@ public class ParkingLot {
             System.out.println(slots+" for "+vehicleType);
             lev.getTypeSlots().put(VehicleType.valueOf(vehicleType),Integer.valueOf(slots));
         }
-        lev.setId(level.charAt(level.length()-1));
+        lev.setId(Integer.parseInt(""+level.charAt(level.length()-1)));
         levelMap.put(lev.getId(),lev);
-        return false;
+        return true;
     }
 
     /**
@@ -105,10 +107,14 @@ public class ParkingLot {
     }
 
     public Map<VehicleType,Integer> getAllSlots(){
-        return null;
+        return levelMap.values()
+                .stream()
+                .flatMap(l -> l.getTypeSlots().entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Integer::sum))
+                ;
     }
 
-    public void allotSlot(VehicleType vehicleType) {
+    public void allotSlot(VehicleType vehicleType, Ticket ticket) {
 
     }
 }
