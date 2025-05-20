@@ -1,11 +1,22 @@
 package parking_lot.dto;
 
+import parking_lot.enums.TicketStatus;
+
 public class Ticket {
-    private int id;
+    private String id;
     private String vehicleNumber;
     private long entryTime;
     private int slotId;
     private int level;
+    private TicketStatus status;
+
+    public TicketStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TicketStatus status) {
+        this.status = status;
+    }
 
     public String getVehicleNumber() {
         return vehicleNumber;
@@ -15,11 +26,11 @@ public class Ticket {
         this.vehicleNumber = vehicleNumber;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 

@@ -1,7 +1,9 @@
 package parking_lot;
 
 import parking_lot.dto.Level;
+import parking_lot.dto.Slot;
 import parking_lot.dto.Ticket;
+import parking_lot.enums.TicketStatus;
 import parking_lot.enums.VehicleType;
 import parking_lot.util.LoaderUtil;
 import java.io.IOException;
@@ -16,6 +18,8 @@ public class ParkingLot {
     private Map<Integer,Level> levelMap = new HashMap<>();
 
     static ParkingLot parkingLot;
+
+    private Map<String,Ticket> allottedTickets = new HashMap<>();
 
     public static ParkingLot init(String configFile) throws IOException {
         if(parkingLot==null){
@@ -79,13 +83,13 @@ public class ParkingLot {
                 .toList();
         System.out.println("map : "+map);
         Level lev = new Level();
-        Map<VehicleType,Integer> vMap = new HashMap<>();
         lev.setTotalSlots(totalSlots.get());
         for(int i=1; i<=totalTypesInLevel.get(); i++){
             String vehicleType = (String) map.get("type" + i + ".name");
             String slots = (String) map.get("type" + i + ".slots");
             System.out.println(slots+" for "+vehicleType);
             lev.getTypeSlots().put(VehicleType.valueOf(vehicleType),Integer.valueOf(slots));
+            lev.getCurrSlotNumber().put(VehicleType.valueOf(vehicleType),1);
         }
         lev.setId(Integer.parseInt(""+level.charAt(level.length()-1)));
         levelMap.put(lev.getId(),lev);
@@ -106,6 +110,9 @@ public class ParkingLot {
         return reduce > 0;
     }
 
+    /**
+     Give all available slots of all types in the form of map
+     * */
     public Map<VehicleType,Integer> getAllSlots(){
         return levelMap.values()
                 .stream()
@@ -114,7 +121,43 @@ public class ParkingLot {
                 ;
     }
 
-    public void allotSlot(VehicleType vehicleType, Ticket ticket) {
+    public Ticket allotSlot(VehicleType vehicleType, String vehicleNumber) {
+        Ticket ticket = new Ticket();
+        if(!isSlotAvailable(vehicleType)){
+            ticket.setStatus(TicketStatus.MAX_OCCUPANCY_REACHED);
+            return ticket;
+        }
+        ticket.setId(UUID.randomUUID().toString());
+        ticket.setVehicleNumber(vehicleNumber);
+        provisionSlot(vehicleType,ticket);
+        ticket.setStatus(TicketStatus.ALLOTTED);
+        return ticket;
+    }
 
+    private void provisionSlot(VehicleType vehicleType, Ticket ticket) {
+        Slot slot = getNextSlotAvailable(vehicleType,ticket);
+        if(slot == null && TicketStatus.CAN_NOT_FIND_SLOT.equals(ticket.getStatus())){
+            return;
+        }
+        ticket.setSlotId(slot.getSlotId());
+        ticket.setLevel(slot.getLevel());
+        ticket.setEntryTime(System.currentTimeMillis());
+    }
+
+    private Slot getNextSlotAvailable(VehicleType vehicleType, Ticket ticket) {
+        Optional<Map.Entry<Integer, Level>> first = levelMap.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().getCurrSlotNumber().get(vehicleType) < entry.getValue().getTypeSlots().get(vehicleType))
+                .findFirst();
+        if(first.isEmpty()){
+            ticket.setStatus(TicketStatus.CAN_NOT_FIND_SLOT);
+            return null;
+        }
+        Slot slot = new Slot();
+        slot.setLevel(first.get().getKey());
+        slot.setSlotId(first.get().getValue().getCurrSlotNumber().get(vehicleType));
+        levelMap.get(first.get().getKey()).getCurrSlotNumber().put(vehicleType,levelMap.get(first.get().getKey()).getCurrSlotNumber().get(vehicleType)+1);
+        levelMap.get(first.get().getKey()).getTypeSlots().put(vehicleType,levelMap.get(first.get().getKey()).getTypeSlots().get(vehicleType)-1);
+        return slot;
     }
 }

@@ -7,8 +7,17 @@ import java.util.Map;
 
 public class Level {
     int id;
-    public int totalSlots;
-    public Map<VehicleType,Integer> typeSlots;
+    private int totalSlots;
+    private Map<VehicleType,Integer> typeSlots;
+    private Map<VehicleType,Integer> currSlotNumber;
+
+    public Map<VehicleType, Integer> getCurrSlotNumber() {
+        return currSlotNumber;
+    }
+
+    public void setCurrSlotNumber(Map<VehicleType, Integer> currSlotNumber) {
+        this.currSlotNumber = currSlotNumber;
+    }
 
     public int getId() {
         return id;
@@ -20,6 +29,7 @@ public class Level {
 
     public Level() {
         this.typeSlots = new HashMap<>();
+        this.currSlotNumber = new HashMap<>();
     }
 
     public int getTotalSlots() {
