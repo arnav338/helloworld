@@ -1,6 +1,7 @@
 package parking_lot.dto;
 
 import parking_lot.enums.TicketStatus;
+import parking_lot.enums.VehicleType;
 
 public class Ticket {
     private String id;
@@ -9,6 +10,15 @@ public class Ticket {
     private int slotId;
     private int level;
     private TicketStatus status;
+    private VehicleType type;
+
+    public VehicleType getType() {
+        return type;
+    }
+
+    public void setType(VehicleType type) {
+        this.type = type;
+    }
 
     public TicketStatus getStatus() {
         return status;

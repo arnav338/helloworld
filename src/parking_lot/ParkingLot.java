@@ -1,8 +1,6 @@
 package parking_lot;
 
-import parking_lot.dto.Level;
-import parking_lot.dto.Slot;
-import parking_lot.dto.Ticket;
+import parking_lot.dto.*;
 import parking_lot.enums.TicketStatus;
 import parking_lot.enums.VehicleType;
 import parking_lot.util.LoaderUtil;
@@ -15,11 +13,13 @@ public class ParkingLot {
 
     private final LoaderUtil loader = new LoaderUtil();
 
-    private Map<Integer,Level> levelMap = new HashMap<>();
+    private final Map<Integer,Level> levelMap = new HashMap<>();
+
+    private final Map<VehicleType, Fare> fareMap = new HashMap<>();
 
     static ParkingLot parkingLot;
 
-    private Map<String,Ticket> allottedTickets = new HashMap<>();
+    private final Map<String,Ticket> allottedTickets = new HashMap<>();
 
     public static ParkingLot init(String configFile) throws IOException {
         if(parkingLot==null){
@@ -59,6 +59,28 @@ public class ParkingLot {
                 return false;
             }
         }
+        properties.entrySet()
+                .stream()
+                .filter(e -> ((String)e.getKey()).contains("type.fare"))
+                .forEach(e -> {
+                    if(((String)e.getKey()).contains("base")){
+                        String s = ((String)e.getKey()).substring(15);
+                        System.out.println("s - "+s);
+                        VehicleType vehicleType = VehicleType.valueOf(s);
+                        if(!fareMap.containsKey(vehicleType)){
+                            fareMap.put(vehicleType,new Fare());
+                        }
+                        fareMap.get(vehicleType).setBase(Integer.parseInt((String) e.getValue()));
+                    }else{
+                        String s = ((String)e.getKey()).substring(15);
+                        System.out.println("s - "+s);
+                        VehicleType vehicleType = VehicleType.valueOf(s);
+                        if(!fareMap.containsKey(vehicleType)){
+                            fareMap.put(vehicleType,new Fare());
+                        }
+                        fareMap.get(vehicleType).setHourly(Integer.parseInt((String) e.getValue()));
+                    }
+                });
         return true;
     }
 
@@ -131,6 +153,8 @@ public class ParkingLot {
         ticket.setVehicleNumber(vehicleNumber);
         provisionSlot(vehicleType,ticket);
         ticket.setStatus(TicketStatus.ALLOTTED);
+        ticket.setType(vehicleType);
+        allottedTickets.put(ticket.getVehicleNumber(),ticket);
         return ticket;
     }
 
@@ -159,5 +183,29 @@ public class ParkingLot {
         levelMap.get(first.get().getKey()).getCurrSlotNumber().put(vehicleType,levelMap.get(first.get().getKey()).getCurrSlotNumber().get(vehicleType)+1);
         levelMap.get(first.get().getKey()).getTypeSlots().put(vehicleType,levelMap.get(first.get().getKey()).getTypeSlots().get(vehicleType)-1);
         return slot;
+    }
+
+    public ExitDetails exit(String vehicleNumber) {
+        ExitDetails exitDetails = new ExitDetails();
+        if(!allottedTickets.containsKey(vehicleNumber)){
+            return null;
+        }
+        Ticket ticket = allottedTickets.get(vehicleNumber);
+        calculateFare(ticket,exitDetails,System.currentTimeMillis());
+        return exitDetails;
+    }
+
+    private void calculateFare(Ticket ticket, ExitDetails exitDetails, long exitTime) {
+        long duration = (exitTime - ticket.getEntryTime())/1000;
+        int min = ((int) (duration/60))+1;
+        int sec = (int) (duration%60);
+        System.out.println("min : "+min+", sec : "+sec);
+        double amt = 0;
+        amt += fareMap.get(ticket.getType()).getBase() + min*fareMap.get(ticket.getType()).getHourly();
+        exitDetails.setAmt(amt);
+        exitDetails.setExitTime(exitTime);
+        exitDetails.setVehicleNumber(ticket.getVehicleNumber());
+        exitDetails.setEntryTime(ticket.getEntryTime());
+        exitDetails.setId(ticket.getId());
     }
 }

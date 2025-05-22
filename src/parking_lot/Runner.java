@@ -1,5 +1,6 @@
 package parking_lot;
 
+import parking_lot.dto.ExitDetails;
 import parking_lot.dto.Ticket;
 import parking_lot.enums.VehicleType;
 
@@ -27,9 +28,32 @@ public class Runner {
 
             printCurrAvailableSlots(parkingLot);
 
+            try{
+                Thread.sleep(70000);
+            }catch (Exception e){
+                System.out.println("Exception - "+e);
+            }
+
+            printExitBanner(parkingLot.exit("HR03AS2239"));
 
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static void printExitBanner(ExitDetails exit) {
+        if(exit == null){
+            System.out.println("********************************");
+            System.out.println(" NO Vehicle entered with this number");
+            System.out.println("********************************");
+        }else {
+            System.out.println("********************************");
+            System.out.println("Vehicle exiting");
+            System.out.println("Amount to pay - "+exit.getAmt());
+            System.out.println("exit time - "+exit.getExitTime());
+            System.out.println("entry time - "+exit.getEntryTime());
+            System.out.println("vehicle number - "+exit.getVehicleNumber());
+            System.out.println("********************************");
         }
     }
 
