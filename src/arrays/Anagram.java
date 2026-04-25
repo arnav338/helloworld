@@ -7,7 +7,7 @@ public class Anagram {
 		String a = "dnsjbvhsvdshbvbshdbvsd";
 		String b = "vjbdshvsdkbvhsdkvcdsv";
 		int res = remAnagrams(a, b);
-		System.out.println("-->"+res);
+		System.out.println("anagrams are -->"+res);
 	}
 	public static int remAnagrams(String s,String s1)
     {
@@ -24,14 +24,14 @@ public class Anagram {
             }
             for(int i=0; i<big.length(); i++){
                 if(!map.containsKey(big.substring(i,i+1))){
-                    System.out.println("-->"+big.substring(i,i+1));
+                    //System.out.println("-->"+big.substring(i,i+1));
                     res++; // needs to be removed
                 }
                 else{
                     bigmap.put(big.substring(i,i+1),bigmap.getOrDefault(big.substring(i,i+1),0)+1);
                     if(map.getOrDefault(big.substring(i,i+1),-1) != bigmap.get(big.substring(i,i+1))){
-                        System.out.println("mismatch -> "+big.substring(i,i+1));
-                        System.out.println(map.get(big.substring(i,i+1))+" || "+bigmap.get(big.substring(i,i+1)));
+                        //System.out.println("mismatch -> "+big.substring(i,i+1));
+                        //System.out.println(map.get(big.substring(i,i+1))+" || "+bigmap.get(big.substring(i,i+1)));
                         res++;
                     }
                 }

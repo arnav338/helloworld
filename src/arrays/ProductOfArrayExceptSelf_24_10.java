@@ -2,7 +2,7 @@ package arrays;
 
 import java.util.Arrays;
 
-public class ProductOfArrayExceptSelf {
+public class ProductOfArrayExceptSelf_24_10 {
     /*
     Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].
 
@@ -67,9 +67,9 @@ and then for each element, product except self will be prefix[i-1] * suffix[i+1]
         int[] res = new int[nums.length];
         Arrays.fill(res,1);
         int curr = 1;
-        for (int i=1; i<nums.length; i++){
+        for (int i=0; i<nums.length; i++){
             res[i] = curr * res[i];
-            curr = curr * nums[i]; // carrying forward product encountered till now, this variable absorbs the current element so that it can be multiplied in next iteration
+            curr = curr * nums[i];// carrying forward product encountered till now, this variable absorbs the current element so that it can be multiplied in next iteration
         }
         curr = 1;
         for (int i=nums.length-1; i>=0; i--){

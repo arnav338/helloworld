@@ -28,7 +28,6 @@ public class NumberOfWaysToReachDestination {
 			 * 
 	 * */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 
 	}
 	static int R = 4;

@@ -1,9 +1,9 @@
 package arrays;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.lang.reflect.Array;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class LargestNumberFormedFromArray {
 	public static void main(String[] args) {
@@ -28,7 +28,7 @@ public class LargestNumberFormedFromArray {
 		 * myCompare() and use it to sort numbers.
 		 * 
 		 * Given two numbers X and Y, how should myCompare() decide which number to put
-		 * first – we compare two numbers XY (Y appended at the end of X) and YX (X
+		 * first ï¿½ we compare two numbers XY (Y appended at the end of X) and YX (X
 		 * appended at the end of Y). If XY is larger, then X should come before Y in
 		 * output, else Y should come before. For example, let X and Y be 542 and 60. To
 		 * compare X and Y, we compare 54260 and 60542. Since 60542 is greater than
@@ -38,6 +38,33 @@ public class LargestNumberFormedFromArray {
 		int[] a = { 3, 2, 1 };
 		String result = compare(a);
 		System.out.println(result);
+
+
+		Map<Integer,Integer> map = new HashMap<>();
+		map.put(1,3);
+		map.put(3,1);
+		map.put(2,2);
+		map.entrySet().stream().sorted().collect(Collectors.toSet());
+		Map<Integer, Integer> sortedMap = map.entrySet().stream()
+				.sorted(Map.Entry.comparingByValue())
+				.collect(Collectors.toMap(
+						Map.Entry::getKey,
+						Map.Entry::getValue,(p,q)->q,LinkedHashMap::new
+				));
+		System.out.println("sorted map - "+sortedMap);
+
+
+
+
+
+
+		List<String> s = new ArrayList<>(Arrays.asList("ac","av"));
+		s.stream().sorted(Comparator.comparing(String::length));
+		Comparator.naturalOrder();
+		Comparator.reverseOrder();
+		Comparator.comparingInt(String::length);
+
+
 	}
 
 	private static String compare(int[] a) {
@@ -48,8 +75,8 @@ public class LargestNumberFormedFromArray {
 		Collections.sort(arr, new Comparator<String>() {
 			@Override
 			public int compare(String o1, String o2) {
-				String xy = o1 + o2; 
-				// if xy.compareTo(yx) returns negative number this means that o1 needs to be appended in front or in other words, 
+				String xy = o1 + o2;
+				// if xy.compareTo(yx) returns negative number this means that o1 needs to be appended in front or in other words,
 				// we want that o2 be placed lower than o1. hence we are returning -1 in xy.compareTo(yx) > 0 ? -1 : 1;
 				String yx = o2 + o1; // less
 				return xy.compareTo(yx) > 0 ? -1 : 1;

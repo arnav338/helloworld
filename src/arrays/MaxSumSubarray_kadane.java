@@ -11,7 +11,8 @@ public class MaxSumSubarray_kadane {
 		 * 
 		 * time complexity using kadane's - O(n)
 		 * */
-		int[] a = {5,-4,-2,6,-1};
+		//int[] a = {5,-4,-2,6,-1};
+		int[] a = {1,15,-20,25,600};
 		int[] b = {-5,-4,-2,-6,-1};
 		System.out.println("Max sum : "+findMaxSumSubarray(a));
 		System.out.println("Max sum : "+findMaxSumSubarrayNegative(b));

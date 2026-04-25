@@ -1,6 +1,7 @@
 package arrays;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class SubsetOfString {
 	
@@ -13,14 +14,14 @@ public class SubsetOfString {
 		 */
 		
 		String a = "abc";
-		ArrayList<String> s = new ArrayList<String>();
+		List<String> s = new ArrayList<String>();
 		addSubSequences(a,s,"",0);
 		s.stream().forEach(System.out::println);
 		System.out.println("=="+s.size());
 		
 	}
 	
-	private static void addSubSequences(String input, ArrayList<String> output,String current,int i) {
+	private static void addSubSequences(String input, List<String> output,String current,int i) {
 		if(i == input.length()) {
 			output.add(current);
 			return;

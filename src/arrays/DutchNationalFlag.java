@@ -20,20 +20,30 @@ public class DutchNationalFlag {
 		 * mid pointer represents our partitioning
 		 * low represents the index where 0's will end
 		 * high represents the index where 2 will start
-		 * */
+		 1,0,2,1,1,0,0,1,2,1
+		 0,1l,2m,1,1,0,0,1,2,1h
+		 0,1l,1m,1,1,0,0,1,2h,2
+		 0,1l,1,1m,1,0,0,1,2h,2
+		 0,1l,1,1,1m,0,0,1,2h,2
+		 0,1l,1,1,1,0m,0,1,2h,2
+		 0,0,1l,1,1,1,0m,1,2h,2
+		 0,0,0,1,1,1,1,1m,2h,2
+
+		 * * */
 		int arr[] = {1,0,2,1,1,0,0,1,2,1};
+		//int arr[] = {2,0,1};
 		int low = 0, mid = 0, high = arr.length-1;
-		while(mid<high) {
-			if(arr[mid] == 0) {
+		while(mid <= high){
+			if(arr[mid] == 0){
 				swap(arr,low,mid);
 				low++;
 				mid++;
 			}
-			else if(arr[mid] == 2) {
-				swap(arr,high,mid);
+			else if(arr[mid] == 2){
+				swap(arr,mid,high);
 				high--;
-			}
-			else { mid++;
+			}else{
+				mid++;
 			}
 		}
 		for(int a : arr) System.out.print(a+"  ");

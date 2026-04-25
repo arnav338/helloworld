@@ -3,6 +3,17 @@ package arrays;
 import java.util.ArrayList;
 
 public class Sieve_GCD {
+
+	/*
+	Sieve of Eratosthenes
+	Helps to find all the prime numbers from 1 to N
+
+	in a boolean array run from 2 to square root of N
+	and mark all multiples of 2,3,... sqrt(N)
+
+	the the boolean values which are left as true are the prime numbers
+	*
+	 */
 	public static void main(String[] args) {
 		
 		ArrayList<Integer> list = sieve(125);
@@ -13,6 +24,9 @@ public class Sieve_GCD {
 		System.out.println(gcd(27,15));
 	}
 
+	/*
+	based on the algorithm that gdc (a,b) = gcd(a-b, b) where a > b
+	* */
 	private static int gcd(int i, int j) {
 		if(j==0) return i;
 		return gcd(j, i%j);

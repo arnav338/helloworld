@@ -44,7 +44,7 @@ public class MinimumPlatforms {
 			} else {
 				if (arr[ar] > dep[de]) { 
 					// if train arrives after departure of previous, then no need to update number of platforms
-					// just increment arrival and departure index as this departure time we have already chacked
+					// just increment arrival and departure index as this departure time we have already checked
 					de++;
 					ar++;
 				} else {

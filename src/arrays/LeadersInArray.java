@@ -23,7 +23,7 @@ public class LeadersInArray {
 		 */
 		int arr[] = {16,17,4,3,5,2};
 		ArrayList<Integer> result = new ArrayList<Integer>();
-		addLeaders(arr,result );
+		addLeaders(arr,result);
 		result.stream().forEach(System.out::println);
 	}
 	// time complexity - O(n)
