@@ -1,0 +1,5 @@
+Problem,Identify,Solution,Quick Tip,Underlying Intent
+DriveCar-style threshold problem,Only one aggregate output is required,"Single-pass max tracking: if x>k then ans=max(ans,x-k)",Avoid sorting/heap unless repeated top queries are needed,Check if candidate can avoid overengineering
+Heapify / Heap Sort,Parent-child property with repeated root placement,"Bottom-up build-heap then swap root to end and heapify reduced heap",Build-heap is O(n) and total sort is O(n log n),Assess structural understanding of heap mechanics
+Insert/Delete in Max-Heap,Dynamic operations with priority access,"Insert: append + bubble-up; Delete root: move last + bubble-down",Both operations are usually O(log n),Test maintenance skills under updates
+Min-Heap to Max-Heap conversion,Need full global max-heap validity,"Heapify all internal nodes bottom-up",One root swap is not enough and bottom-up conversion is O(n),Differentiate local fix from global correctness
