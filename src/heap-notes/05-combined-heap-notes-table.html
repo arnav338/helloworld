@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Heap Notes Summary Table</title>
+  <style>
+    body { font-family: "Segoe UI", Tahoma, Arial, sans-serif; margin: 24px; background: #f7f9fc; color: #1f2937; }
+    h1 { margin: 0 0 16px; font-size: 22px; }
+    .wrap { overflow-x: auto; background: white; border: 1px solid #d1d5db; border-radius: 8px; }
+    table { border-collapse: collapse; width: 100%; min-width: 1400px; }
+    th, td { border: 1px solid #e5e7eb; padding: 10px 12px; text-align: left; vertical-align: top; font-size: 14px; line-height: 1.4; }
+    th { background: #eef2ff; position: sticky; top: 0; }
+    tr:nth-child(even) td { background: #fcfcff; }
+  </style>
+</head>
+<body>
+  <h1>Combined Notes: Heap Problems</h1>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Problem</th>
+          <th>Overview</th>
+          <th>Intuition Path</th>
+          <th>Concepts Used</th>
+          <th>How to Identify</th>
+          <th>Solve Strategy</th>
+          <th>Indicators/Patterns</th>
+          <th>Mental Model</th>
+          <th>Key Takeaway</th>
+          <th>Underlying Intent</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>DriveCar threshold/excess</td>
+          <td>Compute required excess relative to k</td>
+          <td>Try scan -> consider sort/heap -> realize one-pass is enough</td>
+          <td>max tracking, threshold checks</td>
+          <td>Output asks only aggregate max/min/count</td>
+          <td>Single pass track best candidate</td>
+          <td>Need one summary value, not ordered list</td>
+          <td>Aggregate query first structure later</td>
+          <td>Do not overuse heap/sort for one-pass stats</td>
+          <td>Test if candidate can avoid unnecessary data structures</td>
+        </tr>
+        <tr>
+          <td>Heapify + heap sort + kth</td>
+          <td>Build heap and derive sorted order / kth info</td>
+          <td>Understand heap property -> build heap -> extract root repeatedly</td>
+          <td>heapify, build-heap, in-place swaps</td>
+          <td>Problem mentions heap transform/sort or repeated root ops</td>
+          <td>Bottom-up heapify then extraction</td>
+          <td>Top element repeatedly needed</td>
+          <td>Maintain local parent-child invariants</td>
+          <td>Build heap is O(n) and full sort is O(n log n)</td>
+          <td>Evaluate command of heap mechanics and complexity awareness</td>
+        </tr>
+        <tr>
+          <td>Insert/Delete in max-heap</td>
+          <td>Maintain heap under updates</td>
+          <td>Naive rebuild -> bubble up/down standard operations</td>
+          <td>bubble-up, bubble-down, priority queue behavior</td>
+          <td>Dynamic insert/remove-max workload</td>
+          <td>Insert at end then up-heap and delete root then down-heap</td>
+          <td>Frequent updates + priority access</td>
+          <td>Heap is partially ordered tree not sorted array</td>
+          <td>Each operation typically O(log n)</td>
+          <td>Check if candidate knows operational maintenance not just sorting</td>
+        </tr>
+        <tr>
+          <td>Min-heap to max-heap conversion</td>
+          <td>Convert structure property efficiently</td>
+          <td>Root swap idea fails -> bottom-up heapify works</td>
+          <td>maxHeapify, internal nodes, tree indexing</td>
+          <td>Convert/rebuild heap property tasks</td>
+          <td>Heapify from last internal node to root</td>
+          <td>Need global validity, not one-node fix</td>
+          <td>Local fixes compose bottom-up</td>
+          <td>Conversion in O(n) is expected</td>
+          <td>Validate understanding of structural correctness vs superficial fixes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
