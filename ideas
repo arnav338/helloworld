@@ -1,0 +1,57 @@
+Excellent. After thinking about it more, I actually think these 7 projects form a very natural progression. Each project teaches a new AI concept while reusing what you learned previously.
+
+---
+
+# 1. Mini RAG Engine (Build Everything Yourself)
+
+Build a document Q&A system where users upload PDFs (Java docs, Spring docs, company SOPs), and the AI answers questions **only** from those documents. Implement chunking, embeddings, cosine similarity, retrieval, and context construction yourself—avoid LangChain. This teaches how LLMs access external knowledge and why RAG is the foundation of enterprise AI. Companies use this for internal knowledge bases, customer support, legal documents, and engineering documentation. Interviewers can ask about chunk size, embeddings, vector search, hallucinations, and retrieval strategies.
+
+---
+
+# 2. Semantic Search Engine
+
+Instead of keyword search, build a search engine that understands **meaning**. A search like *"avoid blocking in reactive Java"* should return documents discussing `Schedulers`, `Mono.fromCallable()`, or `boundedElastic` even if those exact words weren't typed. Implement embedding generation, vector indexing, similarity scoring, and ranking. This project teaches how modern search engines work and is used in GitHub, Stack Overflow, Netflix, and e-commerce search systems. Interviewers may ask why semantic search outperforms SQL LIKE queries and how ANN/vector indexes improve performance.
+
+---
+
+# 3. AI Memory Engine
+
+Create a long-term memory system for an AI assistant. Instead of remembering every conversation, the backend decides what information is worth storing, summarizes it, embeds it, and retrieves relevant memories during future conversations. This teaches memory management, embedding-based retrieval, summarization, context injection, and memory lifecycle. Real-world AI assistants like ChatGPT, Claude, and enterprise copilots use similar ideas. Interviewers often ask how to prevent context overflow and retrieve only relevant memories efficiently.
+
+---
+
+# 4. AI Agent with Tool Calling (No LangChain)
+
+Build an autonomous AI agent that decides **which tools to use** before answering. For example, when asked about weather, stock prices, or database information, it should call the appropriate API, gather results, and synthesize the final answer. Implement your own tool registry, execution loop, reasoning cycle, retries, and stopping conditions. This teaches agent orchestration, function calling, planning, and AI workflows used in modern enterprise assistants. Interviewers frequently ask how agents differ from simple chatbots and how to prevent infinite tool loops.
+
+---
+
+# 5. Local LLM Integration Platform
+
+Run an open-source LLM locally using Ollama or similar tools and expose it through your Spring Boot application. Compare multiple models (Qwen, Gemma, Llama) based on latency, accuracy, token generation speed, memory usage, and context limits. Implement streaming responses, model switching, caching, and request throttling. This teaches practical LLM deployment instead of relying on cloud APIs. Companies increasingly deploy local models for privacy, compliance, and cost reduction, making this highly relevant for backend engineers.
+
+---
+
+# 6. AI Evaluation & Guardrail Framework
+
+Build a framework that automatically evaluates AI responses before sending them to users. Measure relevance, correctness, hallucination risk, JSON format compliance, toxicity, and confidence, then retry or reject poor responses. Instead of trusting the first AI output, create a quality-control pipeline similar to production AI systems. This teaches evaluation, guardrails, structured outputs, confidence scoring, and reliability engineering. Interviewers increasingly ask how production systems detect hallucinations and ensure AI-generated responses meet quality standards.
+
+---
+
+# 7. Embedding Explorer & Vector Visualizer
+
+Build a developer tool that generates embeddings for words, sentences, code snippets, or documents and visualizes them in 2D using PCA or UMAP. You'll see similar concepts naturally cluster together, helping you understand why embeddings enable semantic search and RAG. Add nearest-neighbor search, clustering, and similarity comparisons. This project demystifies embeddings and gives an intuitive understanding of vector spaces, making many other AI concepts easier to grasp. Interviewers often ask what embeddings represent and why cosine similarity works.
+
+---
+
+## Recommended learning order
+
+1. **Mini RAG** → Learn embeddings, retrieval, and context engineering.
+2. **Semantic Search** → Understand vector search without involving an LLM.
+3. **AI Memory Engine** → Build persistent, intelligent context management.
+4. **AI Agent** → Learn orchestration, tool calling, and reasoning loops.
+5. **Local LLM Platform** → Understand model hosting, inference, and deployment.
+6. **AI Evaluation Framework** → Learn how production systems ensure reliability.
+7. **Embedding Explorer** → Deepen your intuition for vectors and semantic representations.
+
+By the end of these seven projects, you'll have covered the core engineering concepts behind many modern AI systems rather than just learning how to write prompts.
