@@ -49,7 +49,9 @@ sequenceDiagram
 
     C->>T: FHIR, portal, or MPI request
     T->>M: Route or proxy request
-    M->>N: Search, compare, or update patient identity
+    par Concurrent fan-out to every configured logical MPI node
+        M->>N: Send the same search assignment
+    end
     N->>D: Read/write patient, relation, decision, and index data
     D-->>N: Candidate and persistence result
     N-->>M: Match / identity result
@@ -129,8 +131,11 @@ flowchart LR
 The repository supports a performance-oriented architecture. The following are
 **design mechanisms**, not substitute claims for measured production SLOs:
 
-- **Distributed execution:** the main engine coordinates a fleet of node
-  StatefulSets rather than carrying all matching work in one process.
+- **Concurrent fan-out and merge:** for the inspected search path, the main
+  engine sends the same assignment to every configured logical MPI node in
+  parallel and merges their results. It does not first route a request to one
+  patient-specific shard. Each logical node performs the lookup against its
+  node-local in-memory indexes.
 - **Indexed, node-local patient operations:** the MPI JAR exposes indexed node
   storage and patient loaders, which is consistent with avoiding repeated
   full-database scans for matching/search workloads.
@@ -157,7 +162,7 @@ Use this phrasing in a formal setting:
 | --- | --- |
 | Patient-identity intelligence | Links records from multiple clinical systems rather than treating them as isolated CRUD rows. |
 | Standards-based integration | Supports healthcare-facing FHIR, XDS, HL7-related, and MPI exchange patterns. |
-| Distributed MPI topology | Scales matching and lookup workloads beyond a single application instance. |
+| Concurrent distributed MPI search | Fans a search out to configured logical nodes concurrently, where each node uses local in-memory indexes; the main role merges the results. |
 | Auditability by design | Retains identity decisions, changes, events, and reporting data. |
 | Configurable runtime | A common engine image assumes main, node, logger, and tunnel roles using deployment configuration. |
 | Operational maturity | Includes Helm, OCI CI/CD, object-storage artifacts, persistent volumes, secret integration, and rollback packaging. |

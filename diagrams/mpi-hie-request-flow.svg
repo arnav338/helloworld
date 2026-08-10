@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="550" height="390" viewBox="0 0 1100 780">
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563eb"/></marker>
+    <style>text{font-family:Arial,sans-serif;fill:#172554}.t{font-size:28px;font-weight:bold}.s{font-size:18px;font-weight:bold}.b{font-size:14px;fill:#475569}.n{stroke:#2563eb;stroke-width:2;rx:12}.l{stroke:#2563eb;stroke-width:3;fill:none;marker-end:url(#a)}.e{stroke:#16a34a;stroke-width:3;fill:none;marker-end:url(#a)}.d{stroke:#64748b;stroke-width:2;stroke-dasharray:6 5;fill:none}</style>
+  </defs>
+  <rect width="1100" height="780" fill="#f8fafc"/>
+  <text x="550" y="40" text-anchor="middle" class="t">MPI HIE Engine — Search Fan-out and Event Flow</text>
+  <text x="55" y="85" class="s">Synchronous identity-search path</text>
+
+  <g class="n"><rect x="55" y="115" width="170" height="90" fill="#dbeafe"/><rect x="285" y="115" width="170" height="90" fill="#bfdbfe"/><rect x="515" y="115" width="170" height="90" fill="#dbeafe"/></g>
+  <text x="140" y="150" text-anchor="middle" class="s">1. Request</text><text x="140" y="173" text-anchor="middle" class="b">FHIR, portal, MPI</text>
+  <text x="370" y="150" text-anchor="middle" class="s">2. Tunnel</text><text x="370" y="173" text-anchor="middle" class="b">Route and secure</text>
+  <text x="600" y="150" text-anchor="middle" class="s">3. Main engine</text><text x="600" y="173" text-anchor="middle" class="b">Validate and orchestrate</text>
+  <path d="M225 160H285M455 160H515" class="l"/>
+
+  <rect x="745" y="88" width="300" height="250" class="n" fill="#eef2ff"/>
+  <text x="895" y="118" text-anchor="middle" class="s">4. Concurrent fan-out</text>
+  <text x="895" y="140" text-anchor="middle" class="b">Same search goes to every configured</text><text x="895" y="160" text-anchor="middle" class="b">logical MPI node — not one selected shard</text>
+  <g class="n"><rect x="770" y="190" width="75" height="88" fill="#dcfce7"/><rect x="858" y="190" width="75" height="88" fill="#dcfce7"/><rect x="946" y="190" width="75" height="88" fill="#dcfce7"/></g>
+  <text x="807" y="223" text-anchor="middle" class="s">Node 0</text><text x="807" y="244" text-anchor="middle" class="b">Local index</text>
+  <text x="895" y="223" text-anchor="middle" class="s">Node 1</text><text x="895" y="244" text-anchor="middle" class="b">Local index</text>
+  <text x="983" y="223" text-anchor="middle" class="s">Node N</text><text x="983" y="244" text-anchor="middle" class="b">Local index</text>
+  <path d="M685 160H720V180H807V190" class="l"/><path d="M720 180H895V190" class="l"/><path d="M720 180H983V190" class="l"/>
+
+  <rect x="410" y="300" width="270" height="76" class="n" fill="#fef3c7"/>
+  <text x="545" y="330" text-anchor="middle" class="s">5. Merge node results</text><text x="545" y="353" text-anchor="middle" class="b">Fan-in; response waits for concurrent work</text>
+  <path d="M895 338V365H680" class="l"/>
+  <rect x="735" y="405" width="310" height="76" class="n" fill="#dbeafe"/>
+  <text x="890" y="435" text-anchor="middle" class="s">Response</text><text x="890" y="458" text-anchor="middle" class="b">Current identity view through FHIR, portal, MPI</text>
+  <path d="M680 338H710V443H735" class="l"/>
+
+  <text x="55" y="555" class="s">Persistence, HA, and event-driven downstream work</text>
+  <g class="n"><rect x="55" y="590" width="205" height="100" fill="#fef3c7"/><rect x="325" y="590" width="205" height="100" fill="#ede9fe"/><rect x="595" y="590" width="205" height="100" fill="#e0f2fe"/><rect x="865" y="590" width="180" height="100" fill="#dcfce7"/></g>
+  <text x="158" y="627" text-anchor="middle" class="s">Persistence</text><text x="158" y="650" text-anchor="middle" class="b">Identity, decisions, audit</text>
+  <text x="427" y="627" text-anchor="middle" class="s">HA replica behavior</text><text x="427" y="650" text-anchor="middle" class="b">Replica endpoint selection</text>
+  <text x="697" y="627" text-anchor="middle" class="s">Events / logging</text><text x="697" y="650" text-anchor="middle" class="b">Notify, forward, observe</text>
+  <text x="955" y="627" text-anchor="middle" class="s">Operations</text><text x="955" y="650" text-anchor="middle" class="b">Metrics, jobs, recovery</text>
+  <path d="M545 376V530H158V590M545 376V530H427V590M545 376V530H697V590M545 376V530H955V590" class="e"/>
+  <text x="55" y="750" class="b">Data may be partitioned during loading; the inspected live-search path is still a concurrent fan-out to all configured logical nodes.</text>
+</svg>
