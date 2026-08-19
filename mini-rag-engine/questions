@@ -1,0 +1,44 @@
+
+
+## Pass 1: "Do you actually know what you built?" (sanity checks)
+
+These are quick, designed to catch someone who copy-pasted or had an LLM scaffold the whole thing.
+
+1. **Walk me through what happens, step by step, from the moment a PDF is uploaded to when it's queryable.** (No hand-waving — I want to hear "extract → chunk → embed → store," not "it processes the document.")
+2. **What's a vector embedding, in your own words? Why can't you just keyword-match instead?**
+3. **Why cosine similarity specifically? What would go wrong if you used Euclidean distance or dot product instead?**
+4. **You said you store embeddings as float32 BLOBs — why float32 and not float64 or a string of numbers?**
+5. **Walk me through your chunking strategy. Why did you chunk within a page instead of across pages?**
+6. **What does "top-k" mean here, and what happens if k is too small vs too large?**
+7. **You mention "deterministic tie-breaking" — give me a concrete example of when two chunks would tie, and how you break it.**
+8. **What's the actual schema of your three SQLite tables? What's the foreign key relationship?**
+
+If these land cleanly, I move on. If someone stumbles on #3, #6, or #8, that's a signal the depth isn't real.
+
+## Pass 2: Concept deep-dives (this is where I actually learn something about you)
+
+**On retrieval / vector math:**
+- You avoided a vector database and did retrieval in plain Java — what's the time complexity of your similarity search, and at what document count does that become a problem? What would you migrate to, and why (HNSW? IVF? something else)?
+- You mention handling "invalid dimensions" and "zero vectors" — walk me through a real scenario where you'd hit a zero vector, and why it's dangerous for cosine similarity specifically (hint: division by zero / undefined direction).
+- Your embedding and chat models are decoupled interfaces — what happens if someone re-indexes documents with a different embedding model than what's stored? How would you detect and prevent that silently corrupting retrieval?
+
+**On prompt/grounding design:**
+- You said you "separate trusted instructions from untrusted document evidence" — what's the actual attack you're defending against? Can you describe a prompt injection scenario using a malicious PDF, and show me how your design blocks it (or doesn't)?
+- What does "requiring explicit refusal when retrieval is insufficient" actually look like in your prompt? How do you *test* that the model refuses appropriately instead of hallucinating?
+- Citations — how do you guarantee the source numbers the model cites actually map to the chunks you retrieved, rather than the model inventing plausible-looking citations?
+
+**On system design / boundaries:**
+- Why separate `ChatModel` and `EmbeddingModel` interfaces instead of one `AIProvider` interface? What's the actual cost of that decision (more boilerplate, more configuration) versus the benefit?
+- Your docs mention migrating SQLite → a vector database "without destabilizing core logic" — what specifically in your architecture makes that true? What's the seam?
+- You did atomic document indexing with rollback on failure — walk me through what "atomic" means across embedding generation (external API call) + multiple SQLite writes. Those aren't in the same transaction boundary by default — how did you actually handle a partial failure (e.g., embeddings succeed, DB write fails)?
+
+**On testing/validation (this is where I'd push hardest):**
+- Nine tests plus a smoke test is thin for a system with this many moving parts. What's *not* tested? If I asked you to add one test right now that you know is missing, what would it be?
+- You tested the OpenAI-compatible adapter via a local HTTP stub — what does that stub *not* catch that a real provider call would (rate limits, malformed JSON, timeout edge cases)?
+
+**Where I'd probe scope honesty:**
+- Your docs call this a "learning-first vertical slice," not production-complete. Good — so tell me the first three things that break if I throw 10,000 documents and 50 concurrent users at this today.
+
+---
+
+The pattern: Pass 1 checks you didn't just describe an architecture — Pass 2 checks whether you understand the *trade-offs* behind the choices, since that's what separates "built it" from "understands it." Want me to also draft your answers to the toughest 4–5 of these, so you're not caught flat-footed?
