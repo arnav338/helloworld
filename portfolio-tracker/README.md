@@ -3,7 +3,7 @@
 ## Files
 
 - `portfolio_tracker.xlsm` — the Excel tracker, dashboard, history, charts, and its current VBA macros.
-- `PortfolioSnapshotV4.bas` — a backup of the VBA snapshot module. Keep this beside the workbook in case Excel removes or loses the macro module.
+- `PortfolioSnapshotV5.bas` — the current VBA snapshot module. Keep this beside the workbook in case Excel removes or loses the macro module.
 
 ## Normal use
 
@@ -29,9 +29,9 @@ You will need Microsoft Excel desktop. Excel for the web cannot run VBA macros. 
    - Mac: **Tools → Macro → Visual Basic Editor**.
    - Windows: **Developer → Visual Basic** (or `Alt + F11`).
 2. In the Project pane, choose the workbook project.
-3. Select **File → Import File…** and choose `PortfolioSnapshotV4.bas`.
+3. Select **File → Import File…** and choose `PortfolioSnapshotV5.bas`.
 4. Return to Excel, right-click the Record History button, select **Assign Macro**, and select:
-   `PortfolioSnapshotV4.RecordPortfolioSnapshotV4`
+   `PortfolioSnapshotV5.RecordPortfolioSnapshotV5`
 5. Save the workbook as **Excel Macro-Enabled Workbook (`.xlsm`)**.
 
 If the Visual Basic project prompts for a password, do not try to modify existing protected code. Import the supplied module and assign the button to the imported macro.
