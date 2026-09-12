@@ -55,3 +55,176 @@ Build a developer tool that generates embeddings for words, sentences, code snip
 7. **Embedding Explorer** → Deepen your intuition for vectors and semantic representations.
 
 By the end of these seven projects, you'll have covered the core engineering concepts behind many modern AI systems rather than just learning how to write prompts.
+
+---
+
+# Semantic Search Project Scope (1-2 Day Version)
+
+## Goal
+
+Build a small search service that returns results by meaning, not exact keyword match.
+
+## Recommended Scope
+
+### Input
+- 100-500 short documents
+- Pick one domain:
+  - Java / Spring docs
+  - personal notes
+  - internal SOP-style markdown
+  - API docs
+
+### Pipeline
+1. Read documents
+2. Split documents into chunks
+3. Generate embeddings for each chunk
+4. Store chunk text, metadata, and vector
+5. Accept a user query
+6. Embed the query
+7. Compute cosine similarity
+8. Return the top `k` matching chunks
+
+### Output
+- Search API endpoint
+- Simple CLI or minimal UI
+- Show:
+  - query
+  - top matches
+  - similarity score
+  - source document / chunk
+
+### Optional Additions
+- Compare semantic search vs keyword search
+- Filter by source / type / tag
+- Highlight returned source snippets
+
+## Strict Feature Boundary
+
+### Do this
+- Offline indexing
+- Embedding generation
+- Vector similarity search
+- Ranking
+- Result inspection
+
+### Do not do this in v1
+- Chat UI
+- RAG answer generation
+- Agents
+- Memory
+- Auth
+- Distributed vector DB
+- Heavy abstraction layers unless speed is more important than learning
+
+## Suggested Architecture
+
+- Backend: Spring Boot or simple Java app
+- Storage:
+  - fastest learning path: in-memory vectors or SQLite / Postgres
+- Embeddings:
+  - OpenAI embeddings API, or a local embedding model if infra learning is preferred
+- Search flow:
+  1. ingest docs
+  2. chunk docs
+  3. embed chunks
+  4. store vectors
+  5. embed query
+  6. score with cosine similarity
+  7. return top results
+
+## What This Project Actually Teaches
+
+This is not just prompting. It teaches the mechanics behind AI-backed retrieval systems.
+
+### Core concepts
+- Embeddings:
+  - text represented as vectors that capture meaning
+- Semantic similarity:
+  - similar meanings sit near each other in vector space
+- Chunking strategy:
+  - chunks that are too small lose context
+  - chunks that are too large reduce precision
+- Similarity scoring:
+  - cosine similarity, ranking, top-k retrieval
+- Indexing pipeline:
+  - how raw docs become AI-searchable data
+- Evaluation mindset:
+  - whether retrieved results are actually relevant
+- Failure modes:
+  - ambiguous queries
+  - bad chunking
+  - noisy docs
+  - weak domain coverage
+
+### Questions to observe while building
+- Does `reactive blocking issue` find docs about `boundedElastic`?
+- Does `jwt parsing failure` find auth-related docs without exact keyword match?
+- How does chunk size affect retrieval quality?
+- Are the top 3 results better than plain keyword search?
+
+## Real-World Applications
+
+This pattern is directly useful and extensible.
+
+### Common use cases
+- Internal engineering docs search
+- Support knowledge base search
+- Company SOP / runbook search
+- Code snippet discovery
+- API / documentation search
+- Legal / policy document lookup
+- E-commerce product discovery
+- Ticket / incident similarity search
+- Resume / job matching
+- Healthcare or enterprise document retrieval
+
+## How This Can Evolve Later
+
+This project can grow into production-style AI systems:
+
+1. RAG assistant
+   - retrieve top chunks, then let an LLM answer using only those chunks
+2. Hybrid search
+   - combine keyword search and semantic search
+3. Metadata filtering
+   - restrict search by team, product, region, or date range
+4. Re-ranking
+   - use a second model to improve result ordering
+5. Feedback loop
+   - capture clicked results and improve ranking
+6. Vector database integration
+   - move from in-memory storage to pgvector, Pinecone, Weaviate, Elasticsearch, etc.
+7. Evaluation framework
+   - measure recall, precision, and top-k retrieval quality
+8. Personalized search
+   - rank based on user role, team, or prior behavior
+
+## Why This Is a Strong First AI Project
+
+- Small enough for 1-2 days
+- Teaches real AI concepts
+- Directly useful in products
+- Has a clean upgrade path to more advanced systems like RAG and copilots
+
+## Recommended 2-Day Plan
+
+### Day 1
+- Choose a dataset
+- Build ingestion and chunking
+- Generate embeddings
+- Store vectors
+- Implement cosine similarity search
+
+### Day 2
+- Add API or UI
+- Compare against keyword search
+- Tune chunk size and top `k`
+- Add metadata and source references
+- Write short notes on what improved and what failed
+
+## Minimal Success Criteria
+
+The project is good enough if:
+- A query returns meaningfully related results without exact keyword match
+- You can explain how embeddings and cosine similarity work
+- You can show at least 2 examples where semantic search beats plain keyword search
