@@ -36,111 +36,400 @@ The parent Maven project builds eight modules in dependency order:
 
 Dependency direction points inward. Core logic depends on interfaces, never on Ollama, SQLite, PDFBox, or Spring. Read every module's `README.md` before changing its public contract.
 
+## Does Ollama need to be running?
+
+Yes, for the default local setup. There are three separate requirements:
+
+1. **Ollama must be installed** so the `ollama` command exists.
+2. **The Ollama server must be running** at `http://localhost:11434`.
+3. **Both configured models must be downloaded**: one embedding model and one chat model.
+
+### What "models must be available locally" means
+
+This does **not** mean that you must install or register with two additional AI providers. Ollama is the only AI runtime/service used by the local setup.
+
+Think of the setup as:
+
+```text
+This Spring Boot application
+        |
+        | HTTP requests to localhost:11434
+        v
+Ollama (one locally running program)
+        |
+        +-- embeddinggemma model files: text -> vectors
+        |
+        +-- llama2 model files: prompt -> written answer
+```
+
+An Ollama model is a downloaded package of model weights and metadata. The `ollama pull` command obtains that package from Ollama's model library and stores it in Ollama's local model storage. Ollama manages those files; this project does not need their filesystem paths.
+
+```bash
+# Download the local search/embedding model.
+ollama pull embeddinggemma
+
+# Download the local answer-generation/chat model.
+ollama pull llama2
+
+# Show models already stored on this machine.
+ollama list
+```
+
+After the models have been downloaded:
+
+- The application calls only `http://localhost:11434`.
+- Document text and questions do not need to be sent to a cloud AI provider.
+- No model-provider API key or cloud account is required.
+- Ollama loads the appropriate local model when an embedding or chat request arrives.
+- Internet access is not normally required while running the application.
+
+Internet access is needed initially to install/download Ollama and model packages. Maven also needs internet access on its first build to download Java libraries; those libraries are then cached locally. These are setup downloads, not remote runtime services used for answering questions.
+
+Two models are used because they perform different jobs:
+
+| Local Ollama model | Job | Output |
+|---|---|---|
+| `embeddinggemma` | Converts PDF chunks and questions into comparable numeric representations | A vector such as `[0.021, -0.184, ...]` |
+| `llama2` | Reads the question and retrieved PDF text and writes the response | Natural-language text |
+
+Both models run behind the same Ollama process. You do not start one server per model.
+
+The Spring Boot process can start and `/actuator/health` can report `UP` without Ollama because model connections are made only when needed. However:
+
+| Operation | Needs Ollama? | Model used |
+|---|---:|---|
+| Start Spring Boot | No | None |
+| Health check | No | None |
+| List/delete already indexed documents | No | None |
+| Upload/index a PDF | Yes | Embedding model |
+| Search indexed documents | Yes | Embedding model |
+| Ask for a generated answer | Yes | Embedding model and chat model |
+
+Ollama is not mandatory only if you deliberately choose to configure another server that implements the OpenAI-compatible `/v1/embeddings` and `/v1/chat/completions` APIs. The default project does not depend on such a server.
+
 ## Prerequisites
 
-Required:
+### Required software
 
-- Java 21
-- Maven 3.9+
-- Ollama or another OpenAI-compatible endpoint
-- One chat model and one embedding model
+| Requirement | Minimum/project value | Why it is needed |
+|---|---|---|
+| Java JDK | Java 21 | Compiles and runs the Spring Boot application. A JRE alone is insufficient for Maven compilation. |
+| Maven | 3.9 or newer | Builds all eight modules, downloads Java dependencies, and runs tests. |
+| Ollama | Current local version, or another compatible server | Runs the embedding and chat models locally. |
+| `curl` | Any recent version | Used by the README examples to verify services and call the REST API. |
+| Free disk space | Several GB | Model files such as `llama2` are large. Exact size depends on the selected models. |
 
-Not required:
+The default application configuration expects:
 
-- A separate SQLite installation; `sqlite-jdbc` embeds it.
-- Docker.
+```text
+Ollama URL:       http://localhost:11434/v1
+Chat model:       llama2
+Embedding model:  embeddinggemma
+Application port: 8080
+SQLite file:      ./data/rag.db
+```
+
+### Not required
+
+- A separate SQLite installation. The `sqlite-jdbc` dependency contains the database engine.
+- Docker or Kubernetes.
+- An Oracle database or Oracle container image.
 - A cloud account or API key when using local Ollama.
+- Node.js, Python, LangChain, or Spring AI.
 
-Verify tools:
+### Verify Java and Maven
+
+Run:
 
 ```bash
 java -version
 mvn -version
-ollama --version
-curl http://localhost:11434/api/version
 ```
 
-Install models for the default configuration:
+Expected results:
+
+- `java -version` reports version 21.
+- `mvn -version` reports Maven 3.9+ and shows that Maven itself is using Java 21.
+
+If Maven reports an older Java runtime even though Java 21 is installed, correct `JAVA_HOME` before building. On macOS, a temporary fix is:
+
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export PATH="$JAVA_HOME/bin:$PATH"
+java -version
+mvn -version
+```
+
+### Install Ollama when it is missing
+
+On macOS with Homebrew:
+
+```bash
+brew install ollama
+```
+
+Alternatively, install the Ollama desktop application. Verify the CLI afterward:
+
+```bash
+ollama --version
+```
+
+If you use a different operating system, install Ollama using its platform-specific package and continue with the same server/model checks below.
+
+## One-time model setup
+
+The application uses different model types for different jobs:
+
+- `embeddinggemma` converts document chunks and questions into numeric vectors for search.
+- `llama2` reads the question plus retrieved text and generates the final answer.
+
+Download both default models once:
 
 ```bash
 ollama pull embeddinggemma
 ollama pull llama2
 ```
 
-`llama2` is the default because it already exists on the current workstation. Change `RAG_CHAT_MODEL` to any suitable locally installed chat model. The chat and embedding model do not need to be from the same model family.
-
-## Build and test
-
-From this directory:
+Downloads may take several minutes and consume multiple gigabytes. Confirm that both names are present:
 
 ```bash
-mvn clean test
-mvn package
+ollama list
 ```
 
-Maven builds every module in the order declared by the root `pom.xml`. The resulting executable is:
+Expected entries include:
+
+```text
+embeddinggemma:latest
+llama2:latest
+```
+
+The exact displayed tag may include `:latest`; the configuration value `embeddinggemma` or `llama2` resolves that tag automatically.
+
+Important: a chat model is not a replacement for an embedding model. The application needs an embedding-capable model for indexing/search and a chat-capable model for answers.
+
+## Start the application: complete local procedure
+
+Use three terminal windows while learning the project:
+
+- Terminal 1 runs Ollama.
+- Terminal 2 runs Spring Boot.
+- Terminal 3 sends test requests.
+
+### Step 1: move to the project root
+
+In Terminal 2:
+
+```bash
+cd /Users/arnavmalhotra/IdeaProjects/helloworld/mini-rag-engine
+```
+
+All remaining Maven and `java -jar` commands should be run from this directory. The relative SQLite path is resolved from the directory where Java starts.
+
+### Step 2: start or verify Ollama
+
+Ollama may already be running if its desktop application is open. First check it:
+
+```bash
+curl --fail --silent --show-error http://localhost:11434/api/version
+```
+
+A successful response resembles:
+
+```json
+{"version":"0.34.3"}
+```
+
+If the request reports connection refused, start Ollama in Terminal 1:
+
+```bash
+ollama serve
+```
+
+Leave that terminal running. If `ollama serve` says port `11434` is already in use, another Ollama process is probably already serving requests; run the version check again instead of starting a duplicate process.
+
+Verify the required models separately:
+
+```bash
+ollama list
+```
+
+If either default model is absent:
+
+```bash
+ollama pull embeddinggemma
+ollama pull llama2
+```
+
+### Step 3: optionally test Ollama directly
+
+Test the embedding endpoint:
+
+```bash
+curl --fail --silent --show-error http://localhost:11434/v1/embeddings \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"embeddinggemma","input":["Spring dependency injection"]}'
+```
+
+The response should contain a `data` array with an `embedding` array of numbers.
+
+Test the chat endpoint:
+
+```bash
+curl --fail --silent --show-error http://localhost:11434/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"llama2","messages":[{"role":"user","content":"Reply with the word ready"}],"temperature":0}'
+```
+
+The response should contain `choices[0].message.content`. The first request can be slow because Ollama must load the model into memory.
+
+### Step 4: build and test every module
+
+In Terminal 2, from the project root:
+
+```bash
+mvn clean package
+```
+
+This command:
+
+1. Deletes previous build output.
+2. Compiles all eight modules in dependency order.
+3. Runs the unit and adapter tests.
+4. Packages the executable Spring Boot JAR.
+
+A successful build ends with:
+
+```text
+BUILD SUCCESS
+```
+
+The executable is created at:
 
 ```text
 rag-application/target/rag-application-0.1.0-SNAPSHOT.jar
 ```
 
-## Start locally
+Maven needs internet access on the first build to download dependencies into `~/.m2`. Later builds normally reuse that local cache.
 
-Make sure Ollama is running, then:
+### Step 5: start Spring Boot
+
+Still in Terminal 2:
 
 ```bash
 java -jar rag-application/target/rag-application-0.1.0-SNAPSHOT.jar
 ```
 
-Or run through Maven:
+Leave this terminal running. Successful startup includes a message similar to:
+
+```text
+Started MiniRagApplication
+```
+
+The application listens on:
+
+```text
+http://localhost:8080
+```
+
+The first startup creates the `data` directory and SQLite file automatically:
+
+```text
+./data/rag.db
+```
+
+Alternative development command:
 
 ```bash
 mvn -pl rag-application -am spring-boot:run
 ```
 
-Verify the application without invoking a model:
+The packaged-JAR command is recommended for the first run because it proves that the complete distributable was built correctly.
+
+### Step 6: verify Spring Boot independently
+
+In Terminal 3:
 
 ```bash
-curl http://localhost:8080/actuator/health
+curl --fail --silent --show-error http://localhost:8080/actuator/health
 ```
 
-The SQLite file is created automatically at `./data/rag.db` relative to the directory from which the application starts.
+Expected response:
+
+```json
+{"status":"UP"}
+```
+
+This proves that Spring Boot and SQLite initialized. It does not prove that the two model endpoints work; that is why Ollama was tested separately.
 
 ## First end-to-end test
 
-Upload a text-based PDF:
+### 1. Choose a text-based PDF
+
+The PDF must contain selectable text. Image-only/scanned PDFs require OCR, which V1 does not implement. Replace the example path below with a real absolute path.
+
+### 2. Upload and index the PDF
 
 ```bash
-curl -sS -F 'file=@/absolute/path/to/document.pdf' \
+curl --fail --silent --show-error \
+  -F 'file=@/absolute/path/to/document.pdf' \
   http://localhost:8080/api/documents
 ```
 
-List indexed documents:
+During this request, Spring extracts text, creates chunks, calls `embeddinggemma`, and writes everything to SQLite. The response contains a document UUID. Uploading the exact same bytes again returns the existing document because SHA-256 deduplication is enabled.
+
+### 3. List indexed documents
 
 ```bash
-curl -sS http://localhost:8080/api/documents
+curl --fail --silent --show-error \
+  http://localhost:8080/api/documents
 ```
 
-Inspect semantic retrieval without spending chat-model time:
+### 4. Inspect retrieval before involving the chat model
+
+Ask a question whose answer appears in the uploaded PDF:
 
 ```bash
-curl -sS -X POST http://localhost:8080/api/search \
+curl --fail --silent --show-error \
+  -X POST http://localhost:8080/api/search \
   -H 'Content-Type: application/json' \
   -d '{"question":"How are retries handled?","topK":5,"minimumScore":0.20}'
 ```
 
-Ask for a grounded answer:
+This endpoint calls only the embedding model. Its response should contain ranked chunks, similarity scores, filenames, and page numbers. If relevant text does not appear here, diagnose retrieval before testing answer generation.
+
+### 5. Generate a grounded answer
 
 ```bash
-curl -sS -X POST http://localhost:8080/api/questions \
+curl --fail --silent --show-error \
+  -X POST http://localhost:8080/api/questions \
   -H 'Content-Type: application/json' \
   -d '{"question":"How are retries handled?"}'
 ```
 
-Delete a document using the returned UUID:
+This endpoint performs retrieval and then sends the question plus retrieved text to `llama2`. It returns the generated answer, model name, and source passages.
+
+### 6. Delete the indexed document
+
+Replace `DOCUMENT_UUID` with the `id` returned by upload/list:
 
 ```bash
-curl -X DELETE http://localhost:8080/api/documents/DOCUMENT_UUID
+curl --fail --silent --show-error \
+  -X DELETE http://localhost:8080/api/documents/DOCUMENT_UUID
+```
+
+SQLite cascade deletion removes the document, its chunks, and its vectors.
+
+## Stop and restart
+
+Stop the Spring Boot application by pressing `Ctrl+C` in Terminal 2. Stop a terminal-started Ollama server with `Ctrl+C` in Terminal 1. If Ollama is managed by its desktop application, it may continue running normally.
+
+The indexed data survives application restarts in `data/rag.db`. Starting the application again from the same directory reuses that file.
+
+To experiment with a fresh database without deleting anything, provide another path:
+
+```bash
+RAG_DATABASE_PATH=./data/experiment.db \
+java -jar rag-application/target/rag-application-0.1.0-SNAPSHOT.jar
 ```
 
 ## What happens during indexing
