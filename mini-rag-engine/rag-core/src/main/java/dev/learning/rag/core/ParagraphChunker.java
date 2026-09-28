@@ -22,6 +22,15 @@ public final class ParagraphChunker {
     private final int maximumCharacters;
     private final int overlapCharacters;
 
+    /**
+     * Creates the V1 character-based chunking strategy and validates its
+     * configuration once rather than during every upload.
+     *
+     * <p>How to evolve it: new tuning values can be constructor parameters. If
+     * the underlying concept changes (token-aware or semantic chunking), keep
+     * this class as V1, introduce a {@code TextChunker} interface and a separate
+     * V2 class, then select the bean in application configuration.</p>
+     */
     public ParagraphChunker(int maximumCharacters, int overlapCharacters) {
         if (maximumCharacters < 100) throw new IllegalArgumentException("maximumCharacters must be at least 100");
         if (overlapCharacters < 0 || overlapCharacters >= maximumCharacters) {
@@ -34,6 +43,14 @@ public final class ParagraphChunker {
     /**
      * Chunks every page independently so a chunk always has one unambiguous
      * citation page. Empty pages are skipped rather than embedded.
+     *
+     * <p>Backend flow: {@code DocumentIndexingService} calls this after PDF
+     * extraction and before the embedding external-service client. The result
+     * is normal domain data; this method performs no I/O.</p>
+     *
+     * <p>How to evolve it: preserve document/page provenance and deterministic
+     * ordering in every implementation. Chunking changes require re-indexing
+     * because the database stores these exact chunks and their vectors.</p>
      */
     public List<Chunk> chunk(UUID documentId, String filename, List<DocumentPage> pages) {
         if (documentId == null) throw new IllegalArgumentException("documentId is required");
@@ -50,6 +67,8 @@ public final class ParagraphChunker {
 
             int start = 0;
             while (start < text.length()) {
+                // First choose a maximum end, then move it backward to a human
+                // boundary to avoid cutting ordinary text unnecessarily.
                 int desiredEnd = Math.min(start + maximumCharacters, text.length());
                 int end = chooseNaturalBoundary(text, start, desiredEnd);
                 String value = text.substring(start, end).strip();
@@ -69,7 +88,15 @@ public final class ParagraphChunker {
         return List.copyOf(result);
     }
 
-    /** Finds the best boundary near the target without creating tiny chunks. */
+    /**
+     * Finds the best boundary near the target without creating tiny chunks.
+     * Priority is paragraph break, then whitespace, then a hard character
+     * boundary. The halfway limit prevents inefficiently small chunks.
+     *
+     * <p>How to evolve it: sentence detection can replace this decision while
+     * preserving the contract. A fundamentally semantic algorithm should be a
+     * separate chunker implementation, not hidden in this helper.</p>
+     */
     private int chooseNaturalBoundary(String text, int start, int desiredEnd) {
         if (desiredEnd == text.length()) return desiredEnd;
         int minimumUsefulEnd = start + maximumCharacters / 2;
@@ -81,4 +108,3 @@ public final class ParagraphChunker {
         return desiredEnd;
     }
 }
-

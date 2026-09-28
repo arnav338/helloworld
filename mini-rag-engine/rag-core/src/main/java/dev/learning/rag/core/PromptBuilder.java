@@ -5,7 +5,16 @@ import dev.learning.rag.model.SearchResult;
 
 import java.util.List;
 
-/** Builds a bounded, inspectable prompt instead of hiding prompt construction. */
+/**
+ * Business component that maps retrieved domain data to a chat-client DTO.
+ * In a typical backend this resembles an assembler: it converts a question and
+ * repository search results into the format expected by the next service.
+ *
+ * <p>How to evolve it: wording changes can be made here without re-indexing.
+ * For A/B-tested V1/V2 prompts, introduce a {@code PromptFactory} interface,
+ * keep each template in a separate implementation, and select one in Spring
+ * configuration. Do not place prompt text in the controller or HTTP client.</p>
+ */
 public final class PromptBuilder {
     private static final String SYSTEM = """
             You answer questions using only the evidence supplied by the application.
@@ -23,9 +32,13 @@ public final class PromptBuilder {
      * context windows, citation prompting.</p>
      */
     public ChatRequest build(String question, List<SearchResult> sources) {
+        // The user's question and retrieved evidence are combined as ordinary
+        // text. Stored vectors are never sent to the chat model.
         StringBuilder prompt = new StringBuilder("QUESTION:\n").append(question.strip()).append("\n\nEVIDENCE:\n");
         if (sources.isEmpty()) prompt.append("No relevant evidence was retrieved.\n");
         for (SearchResult source : sources) {
+            // Rank becomes a stable citation handle such as [source 1]. The
+            // original filename/page remain available for user verification.
             prompt.append("\n[source ").append(source.rank()).append("] file=")
                     .append(source.chunk().filename()).append(" page=")
                     .append(source.chunk().pageNumber()).append(" score=")
@@ -37,4 +50,3 @@ public final class PromptBuilder {
         return new ChatRequest(SYSTEM, prompt.toString());
     }
 }
-

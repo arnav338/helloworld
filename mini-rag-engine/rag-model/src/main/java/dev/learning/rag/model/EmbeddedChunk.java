@@ -10,6 +10,10 @@ import java.util.Arrays;
  * immutability. Search topic: "defensive copying Java arrays".</p>
  */
 public record EmbeddedChunk(Chunk chunk, String embeddingModel, float[] vector) {
+    /**
+     * Validates compatibility metadata/numbers and defensively copies mutable
+     * array input before the value can cross service/repository boundaries.
+     */
     public EmbeddedChunk {
         if (chunk == null) throw new IllegalArgumentException("chunk is required");
         if (embeddingModel == null || embeddingModel.isBlank()) throw new IllegalArgumentException("embeddingModel is required");
@@ -21,9 +25,13 @@ public record EmbeddedChunk(Chunk chunk, String embeddingModel, float[] vector) 
         }
     }
 
+    /**
+     * Returns a copy so callers cannot mutate the record's internal vector.
+     * Replace arrays with an immutable vector type only as a coordinated API,
+     * codec, provider, and similarity migration.
+     */
     @Override
     public float[] vector() {
         return Arrays.copyOf(vector, vector.length);
     }
 }
-

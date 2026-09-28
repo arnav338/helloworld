@@ -4,6 +4,8 @@ A learning-first, local document question-answering system built with Java 21. I
 
 The project intentionally does **not** use LangChain, Spring AI, an Oracle service, Kubernetes, or a hosted database. The important mechanics stay visible in ordinary Java.
 
+If you understand conventional Spring Controller -> Service -> Repository applications, begin with [BACKEND-DEVELOPER-GUIDE.md](BACKEND-DEVELOPER-GUIDE.md). It maps every RAG component to familiar backend layers, traces both request flows, and explains exactly where V1/V2 implementations can be selected.
+
 ## Current capabilities
 
 - Upload and index text-based PDFs.
@@ -312,4 +314,3 @@ SERVER_PORT=8081 java -jar rag-application/target/rag-application-0.1.0-SNAPSHOT
 Search and study these topics while reading the implementation: RAG indexing/query pipelines, embeddings, vector spaces, cosine similarity, exact k-nearest-neighbor search, chunk overlap, prompt injection, context windows, ports-and-adapters architecture, dependency inversion, Java records, defensive copying, JDBC transactions, SQLite WAL, HTTP JSON APIs, and Spring Boot configuration properties.
 
 The original design material is retained under `project-plan/`.
-

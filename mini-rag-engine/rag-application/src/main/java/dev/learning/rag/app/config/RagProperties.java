@@ -20,9 +20,15 @@ public record RagProperties(
         Retrieval retrieval,
         int embeddingBatchSize) {
 
+    /** Settings for one external model API client. Chat and embedding use separate instances. */
     public record Model(URI baseUrl, String apiKey, String model, Duration timeout) { }
+
+    /** Repository settings; V1 needs only the local SQLite file path. */
     public record Store(Path path) { }
+
+    /** Business settings controlling passage size and repeated context. */
     public record Chunking(int maximumCharacters, int overlapCharacters) { }
+
+    /** Default search limit and similarity cutoff used when a request omits them. */
     public record Retrieval(int topK, double minimumScore) { }
 }
-

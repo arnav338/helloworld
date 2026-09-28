@@ -9,6 +9,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ParagraphChunkerTest {
+    /** Protects two public promises: long input is split and citation metadata survives. */
     @Test
     void preservesPageAndCreatesMultipleChunks() {
         String text = "first paragraph ".repeat(20) + "\n\n" + "second paragraph ".repeat(20);
@@ -18,7 +19,9 @@ class ParagraphChunkerTest {
         assertEquals("guide.pdf", chunks.getFirst().filename());
     }
 
-    @Test void skipsBlankPages() {
+    /** Blank pages must not cause empty chunks/model calls/database rows. */
+    @Test
+    void skipsBlankPages() {
         assertTrue(new ParagraphChunker(100, 10).chunk(UUID.randomUUID(), "x.pdf", List.of(new DocumentPage(1, "  "))).isEmpty());
     }
 }

@@ -29,6 +29,15 @@ import java.util.UUID;
 public final class SqliteVectorStore implements VectorStore {
     private final String jdbcUrl;
 
+    /**
+     * Converts a configured file path to a JDBC URL and creates the schema.
+     * In a normal Spring/JPA application, Flyway/Liquibase might own schema
+     * creation; V1 keeps it local so the project has no external database setup.
+     *
+     * <p>How to evolve it: add versioned migrations before changing a released
+     * schema. A different database belongs in a separate {@link VectorStore}
+     * implementation rather than database conditionals in this class.</p>
+     */
     public SqliteVectorStore(Path databasePath) {
         try {
             Path absolute = databasePath.toAbsolutePath().normalize();
@@ -40,6 +49,14 @@ public final class SqliteVectorStore implements VectorStore {
         }
     }
 
+    /**
+     * Opens one short-lived JDBC connection and enables required SQLite rules.
+     * Foreign keys are connection-scoped in SQLite, so every connection must
+     * enable them. WAL improves normal reader/writer coexistence.
+     *
+     * <p>How to evolve it: a pooled/network database implementation should own
+     * its DataSource elsewhere; callers still use the VectorStore contract.</p>
+     */
     private Connection open() throws SQLException {
         Connection connection = DriverManager.getConnection(jdbcUrl);
         try (Statement statement = connection.createStatement()) {
@@ -49,6 +66,10 @@ public final class SqliteVectorStore implements VectorStore {
         return connection;
     }
 
+    /**
+     * Creates the three relational tables and lookup index if absent. The model
+     * is document -> chunks -> one embedding per chunk, with cascade deletion.
+     */
     private void initializeSchema() throws SQLException {
         try (Connection connection = open(); Statement statement = connection.createStatement()) {
             statement.executeUpdate("""
@@ -71,12 +92,25 @@ public final class SqliteVectorStore implements VectorStore {
         }
     }
 
+    /**
+     * Repository write transaction. It inserts the aggregate root, batches all
+     * child chunks/vectors, and commits only when every statement succeeds.
+     * Rollback ensures provider/service callers never observe partial indexing.
+     *
+     * <p>How to evolve it: bulk-performance improvements may change statement
+     * mechanics but must preserve atomicity, ownership validation, model name,
+     * dimension, and vector bytes. Add rollback tests before refactoring.</p>
+     */
     @Override
     public void save(DocumentRecord document, List<EmbeddedChunk> chunks) {
+        // Service code should already construct a consistent aggregate, but the
+        // repository protects itself because other callers may be added later.
         if (chunks.stream().anyMatch(item -> !item.chunk().documentId().equals(document.id()))) {
             throw new IllegalArgumentException("every chunk must belong to the saved document");
         }
         try (Connection connection = open()) {
+            // JDBC auto-commit would make each INSERT independently permanent.
+            // Disabling it creates one document-level transaction.
             connection.setAutoCommit(false);
             try {
                 try (PreparedStatement statement = connection.prepareStatement("INSERT INTO documents(id,filename,checksum,page_count,created_at) VALUES(?,?,?,?,?)")) {
@@ -86,6 +120,8 @@ public final class SqliteVectorStore implements VectorStore {
                 }
                 try (PreparedStatement chunkStatement = connection.prepareStatement("INSERT INTO chunks(id,document_id,filename,page_number,chunk_index,text) VALUES(?,?,?,?,?,?)");
                      PreparedStatement vectorStatement = connection.prepareStatement("INSERT INTO embeddings(chunk_id,model,dimension,vector) VALUES(?,?,?,?)")) {
+                    // Batching reduces JDBC round trips while retaining one row
+                    // for readable text and one row for its binary embedding.
                     for (EmbeddedChunk item : chunks) {
                         Chunk chunk = item.chunk();
                         chunkStatement.setString(1, chunk.id().toString()); chunkStatement.setString(2, chunk.documentId().toString());
@@ -107,7 +143,9 @@ public final class SqliteVectorStore implements VectorStore {
         }
     }
 
-    @Override public List<DocumentRecord> listDocuments() {
+    /** Maps document rows to immutable domain records for the list endpoint. */
+    @Override
+    public List<DocumentRecord> listDocuments() {
         List<DocumentRecord> result = new ArrayList<>();
         try (Connection connection = open(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM documents ORDER BY created_at DESC"); ResultSet rows = statement.executeQuery()) {
             while (rows.next()) result.add(readDocument(rows));
@@ -115,9 +153,23 @@ public final class SqliteVectorStore implements VectorStore {
         } catch (SQLException exception) { throw new StoreException("failed to list documents", exception); }
     }
 
-    @Override public Optional<DocumentRecord> findDocument(UUID documentId) { return findDocumentBy("id", documentId.toString()); }
-    @Override public Optional<DocumentRecord> findByChecksum(String checksum) { return findDocumentBy("checksum", checksum); }
+    /** Delegates UUID lookup to the shared single-row mapper. */
+    @Override
+    public Optional<DocumentRecord> findDocument(UUID documentId) {
+        return findDocumentBy("id", documentId.toString());
+    }
 
+    /** Delegates checksum lookup used by upload deduplication. */
+    @Override
+    public Optional<DocumentRecord> findByChecksum(String checksum) {
+        return findDocumentBy("checksum", checksum);
+    }
+
+    /**
+     * Executes the common document lookup and maps zero/one row to Optional.
+     * Only private callers choose the column, so dynamic SQL cannot contain
+     * user-supplied identifiers; the value itself remains parameterized.
+     */
     private Optional<DocumentRecord> findDocumentBy(String column, String value) {
         // column is selected only by private callers, never user input. Values
         // remain parameterized to prevent SQL injection.
@@ -127,7 +179,16 @@ public final class SqliteVectorStore implements VectorStore {
         } catch (SQLException exception) { throw new StoreException("failed to find document", exception); }
     }
 
-    @Override public List<EmbeddedChunk> findAllEmbeddedChunks() {
+    /**
+     * Loads text and vectors for V1 exact search. The JOIN reconstructs each
+     * {@link EmbeddedChunk} aggregate from normalized relational tables.
+     *
+     * <p>How to evolve it: this does not scale to millions of vectors. A V2
+     * pgvector/search implementation should perform top-K ranking server-side
+     * behind a deliberately extended retrieval/store interface.</p>
+     */
+    @Override
+    public List<EmbeddedChunk> findAllEmbeddedChunks() {
         String sql = """
                 SELECT c.id,c.document_id,c.filename,c.page_number,c.chunk_index,c.text,
                        e.model,e.dimension,e.vector
@@ -145,14 +206,16 @@ public final class SqliteVectorStore implements VectorStore {
         } catch (SQLException exception) { throw new StoreException("failed to load vectors", exception); }
     }
 
-    @Override public void deleteDocument(UUID documentId) {
+    /** Deletes the parent row; foreign-key cascades delete chunks/embeddings. */
+    @Override
+    public void deleteDocument(UUID documentId) {
         try (Connection connection = open(); PreparedStatement statement = connection.prepareStatement("DELETE FROM documents WHERE id=?")) {
             statement.setString(1, documentId.toString()); statement.executeUpdate();
         } catch (SQLException exception) { throw new StoreException("failed to delete document", exception); }
     }
 
+    /** Centralizes JDBC-column to domain-record mapping for every document query. */
     private static DocumentRecord readDocument(ResultSet rows) throws SQLException {
         return new DocumentRecord(UUID.fromString(rows.getString("id")), rows.getString("filename"), rows.getString("checksum"), rows.getInt("page_count"), Instant.parse(rows.getString("created_at")));
     }
 }
-

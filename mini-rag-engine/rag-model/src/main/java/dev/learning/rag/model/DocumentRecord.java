@@ -21,6 +21,7 @@ public record DocumentRecord(
         int pageCount,
         Instant createdAt) {
 
+    /** Ensures an invalid document aggregate cannot enter the service/store. */
     public DocumentRecord {
         Objects.requireNonNull(id, "id");
         filename = requireText(filename, "filename");
@@ -31,6 +32,7 @@ public record DocumentRecord(
         Objects.requireNonNull(createdAt, "createdAt");
     }
 
+    /** Shared constructor helper for mandatory normalized text fields. */
     private static String requireText(String value, String field) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(field + " must not be blank");
@@ -38,4 +40,3 @@ public record DocumentRecord(
         return value.strip();
     }
 }
-

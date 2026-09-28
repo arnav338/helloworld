@@ -12,12 +12,33 @@ package dev.learning.rag.core;
  * point accumulation, vector normalization.</p>
  */
 public final class CosineSimilarity {
+    /** Utility class: callers use {@link #score(float[], float[])}; no object state is required. */
     private CosineSimilarity() { }
 
+    /**
+     * Converts two equal-length vectors into one comparable score in [-1, 1].
+     * This is analogous to a backend scoring function: it accepts two values
+     * and returns a deterministic ranking signal; it does not call a model or
+     * database.
+     *
+     * <p>Algorithm: the dot product measures aligned movement, while each
+     * magnitude removes vector-length effects. Dividing them compares direction
+     * (semantic orientation) rather than raw numeric size.</p>
+     *
+     * <p>How to evolve it: optimize this implementation in place only if the
+     * mathematical contract stays cosine similarity. To compare cosine against
+     * dot product or Euclidean distance, introduce a {@code SimilarityScorer}
+     * interface, create named V1/V2 implementations, inject it into
+     * {@link Retriever}, and evaluate both on the same question set.</p>
+     */
     public static double score(float[] left, float[] right) {
+        // Coordinate N on the left must represent the same learned feature as
+        // coordinate N on the right, so dimensions must match exactly.
         if (left == null || right == null || left.length == 0 || left.length != right.length) {
             throw new IllegalArgumentException("vectors must be non-empty and have equal dimensions");
         }
+        // Accumulate with double precision even though provider data is float;
+        // this reduces rounding error across hundreds/thousands of dimensions.
         double dot = 0.0;
         double leftSquared = 0.0;
         double rightSquared = 0.0;
@@ -37,4 +58,3 @@ public final class CosineSimilarity {
         return Math.max(-1.0, Math.min(1.0, dot / Math.sqrt(leftSquared * rightSquared)));
     }
 }
-

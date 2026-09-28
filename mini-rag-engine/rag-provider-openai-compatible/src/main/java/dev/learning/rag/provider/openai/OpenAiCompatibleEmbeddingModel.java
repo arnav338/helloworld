@@ -26,26 +26,42 @@ public final class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public OpenAiCompatibleEmbeddingModel(OpenAiCompatibleClientConfig config, HttpClient httpClient, ObjectMapper objectMapper) {
+    /** Receives immutable settings plus reusable HTTP/JSON infrastructure. */
+    public OpenAiCompatibleEmbeddingModel(OpenAiCompatibleClientConfig config, HttpClient httpClient,
+                                          ObjectMapper objectMapper) {
         this.config = config;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Client flow: validate a text batch, serialize it, call the model server,
+     * and deserialize one numeric vector for each input at the same list index.
+     *
+     * <p>How to evolve it: batching/retry policy may be improved here while
+     * preserving order, count, and dimension guarantees. A provider with a
+     * different protocol should implement {@link EmbeddingModel} separately.
+     * Changing the configured embedding model requires re-indexing.</p>
+     */
     @Override
     public List<float[]> embed(List<String> inputs) {
         if (inputs == null || inputs.isEmpty() || inputs.stream().anyMatch(value -> value == null || value.isBlank())) {
             throw new IllegalArgumentException("embedding inputs must not be empty or blank");
         }
+        // Translation layer: ordinary Java strings become provider JSON.
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("model", config.model());
         payload.set("input", objectMapper.valueToTree(inputs));
         JsonNode root = send(payload, "embeddings");
+        // Cardinality is a contract invariant: input[i] must map to output[i],
+        // otherwise the wrong vector could be attached to a document chunk.
         JsonNode data = root.path("data");
         if (!data.isArray() || data.size() != inputs.size()) {
             throw new ModelProviderException("embedding provider returned " + data.size() + " vectors for " + inputs.size() + " inputs");
         }
 
+        // Convert JSON numbers to compact Java arrays. Every vector in this
+        // batch must share one dimension for similarity math to be valid.
         List<float[]> vectors = new ArrayList<>();
         int dimension = -1;
         for (JsonNode item : data) {
@@ -60,8 +76,20 @@ public final class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
         return List.copyOf(vectors);
     }
 
-    @Override public String modelName() { return config.model(); }
+    /** Returns compatibility metadata persisted with every generated vector. */
+    @Override
+    public String modelName() {
+        return config.model();
+    }
 
+    /**
+     * Performs the HTTP exchange and returns parsed provider JSON. Keeping
+     * transport here leaves {@link #embed(List)} focused on its domain contract.
+     *
+     * <p>How to evolve it: add bounded retry/backoff only for safe transient
+     * failures and cover it with stub-server tests. Never retry indefinitely or
+     * log authorization headers/document text.</p>
+     */
     private JsonNode send(JsonNode payload, String route) {
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder(config.endpoint(route))
@@ -74,6 +102,7 @@ public final class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
             }
             return objectMapper.readTree(response.body());
         } catch (InterruptedException exception) {
+            // Preserve cancellation semantics before translating the exception.
             Thread.currentThread().interrupt();
             throw new ModelProviderException("embedding request was interrupted", exception);
         } catch (IOException exception) {
@@ -81,9 +110,12 @@ public final class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
         }
     }
 
+    /**
+     * Limits downstream error text so a provider cannot create an enormous
+     * log/API error. A provider-specific V2 may redact sensitive fields first.
+     */
     private static String abbreviate(String value) {
         if (value == null) return "";
         return value.length() <= 500 ? value : value.substring(0, 500) + "...";
     }
 }
-

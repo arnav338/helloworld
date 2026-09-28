@@ -4,6 +4,7 @@ import java.util.List;
 
 /** Final API-facing RAG outcome with inspectable retrieval evidence. */
 public record RagAnswer(String answer, String chatModel, List<SearchResult> sources) {
+    /** Validates answer text and copies sources to keep the response immutable. */
     public RagAnswer {
         if (answer == null || answer.isBlank()) throw new IllegalArgumentException("answer is required");
         chatModel = chatModel == null ? "unknown" : chatModel;

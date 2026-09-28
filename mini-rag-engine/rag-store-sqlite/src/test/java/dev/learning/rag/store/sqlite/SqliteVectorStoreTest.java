@@ -14,7 +14,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class SqliteVectorStoreTest {
     @TempDir Path temporaryDirectory;
 
-    @Test void persistsAndCascadeDeletesDocumentWithVector() {
+    /**
+     * Exercises the repository as a black box: save an aggregate, read its
+     * exact vector, delete the parent, and verify foreign-key cascade cleanup.
+     */
+    @Test
+    void persistsAndCascadeDeletesDocumentWithVector() {
         var store = new SqliteVectorStore(temporaryDirectory.resolve("rag.db"));
         UUID documentId = UUID.randomUUID();
         var document = new DocumentRecord(documentId, "guide.pdf", "abc", 1, Instant.now());

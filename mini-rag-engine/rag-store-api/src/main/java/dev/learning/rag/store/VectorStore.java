@@ -19,11 +19,27 @@ import java.util.UUID;
  * exact versus approximate nearest-neighbor search.</p>
  */
 public interface VectorStore {
+    /**
+     * Atomically persists one document aggregate: parent metadata plus all
+     * chunks/vectors. Implementations must not leave partial data on failure.
+     */
     void save(DocumentRecord document, List<EmbeddedChunk> chunks);
+
+    /** Returns document metadata for the controller, newest first if supported. */
     List<DocumentRecord> listDocuments();
+
+    /** Finds one document by its public UUID without loading all chunk bodies. */
     Optional<DocumentRecord> findDocument(UUID documentId);
+
+    /** Supports idempotent upload by looking up a deterministic content hash. */
     Optional<DocumentRecord> findByChecksum(String checksum);
+
+    /**
+     * Returns V1 retrieval candidates with their text and vectors. A scalable
+     * V2 store may add a database-side search contract instead of loading all.
+     */
     List<EmbeddedChunk> findAllEmbeddedChunks();
+
+    /** Deletes the document aggregate, including chunks/vectors by cascade. */
     void deleteDocument(UUID documentId);
 }
-

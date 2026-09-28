@@ -7,9 +7,9 @@ package dev.learning.rag.model;
  * <p>Study topics: provenance metadata and document-layout extraction.</p>
  */
 public record DocumentPage(int pageNumber, String text) {
+    /** Normalizes missing extracted text to empty while preserving the page. */
     public DocumentPage {
         if (pageNumber < 1) throw new IllegalArgumentException("pageNumber starts at 1");
         text = text == null ? "" : text;
     }
 }
-

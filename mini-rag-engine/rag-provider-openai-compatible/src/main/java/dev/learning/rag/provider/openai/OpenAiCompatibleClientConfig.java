@@ -9,6 +9,7 @@ public record OpenAiCompatibleClientConfig(
         String apiKey,
         String model,
         Duration timeout) {
+    /** Validates connection settings once when Spring constructs the adapter. */
     public OpenAiCompatibleClientConfig {
         if (baseUrl == null || !baseUrl.isAbsolute()) throw new IllegalArgumentException("baseUrl must be absolute");
         apiKey = apiKey == null ? "" : apiKey;
@@ -16,10 +17,14 @@ public record OpenAiCompatibleClientConfig(
         if (timeout == null || timeout.isNegative() || timeout.isZero()) throw new IllegalArgumentException("timeout must be positive");
     }
 
-    /** Resolves an API route safely whether baseUrl has a trailing slash or not. */
+    /**
+     * Resolves an API route safely whether base URL/route contains a slash.
+     *
+     * <p>How to evolve it: provider-specific path rules should live in a new
+     * provider adapter/config rather than accumulating conditionals here.</p>
+     */
     URI endpoint(String route) {
         String base = baseUrl.toString().replaceAll("/+$", "");
         return URI.create(base + "/" + route.replaceFirst("^/+", ""));
     }
 }
-

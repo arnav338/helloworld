@@ -20,6 +20,13 @@ public record Chunk(
         int chunkIndex,
         String text) {
 
+    /**
+     * Enforces the domain invariants required by persistence and citation code.
+     *
+     * <p>How to evolve it: additive provenance fields are safe when every
+     * creator/store/reader is updated together. A new chunking strategy should
+     * still return this neutral model unless it requires genuinely new data.</p>
+     */
     public Chunk {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(documentId, "documentId");
@@ -31,4 +38,3 @@ public record Chunk(
         text = text.strip();
     }
 }
-
