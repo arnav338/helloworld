@@ -207,7 +207,110 @@ The exact displayed tag may include `:latest`; the configuration value `embeddin
 
 Important: a chat model is not a replacement for an embedding model. The application needs an embedding-capable model for indexing/search and a chat-capable model for answers.
 
+## Recommended: one-command fail-safe startup
+
+Manual commands remain documented below for learning and troubleshooting, but normal local use should start with:
+
+```bash
+cd /Users/arnavmalhotra/IdeaProjects/helloworld/mini-rag-engine
+./start-local.sh
+```
+
+The script is idempotent: running it again rechecks the environment and skips healthy components instead of blindly reinstalling or redownloading them.
+
+It performs these checks in order:
+
+1. Prevents two copies of the startup script from modifying build/PID state concurrently.
+2. Validates Java 21+, Maven 3.9+, `curl`, and the Ollama CLI.
+3. On macOS, uses an existing Homebrew installation to install or repair missing/outdated Java, Maven, or Ollama.
+4. Starts `ollama serve` when the server is not already available.
+5. Checks whether `embeddinggemma` and `llama2` are locally installed.
+6. Pulls only a missing model; an already available model skips downloading.
+7. Calls the real embedding and chat HTTP endpoints—not merely `ollama list`—to prove both models load and respond.
+8. If a model API fails, runs one `ollama pull` repair/verification and retests it.
+9. Validates the Maven project layout.
+10. Runs `mvn clean package`, including all tests.
+11. Verifies that the output is an executable Spring Boot JAR containing `MiniRagApplication`.
+12. Refuses to kill an unrelated process if port 8080 or 11434 is occupied.
+13. Starts Spring Boot and waits for `/actuator/health` to return `UP`.
+14. Prints `SUCCESS` only after all required checks pass.
+
+The default mode stays attached to Spring Boot. Press `Ctrl+C` to stop the application:
+
+```bash
+./start-local.sh
+```
+
+Start it in the background:
+
+```bash
+./start-local.sh --background
+```
+
+Run all prerequisite, model, test, and JAR diagnostics without starting Spring Boot:
+
+```bash
+./start-local.sh --check-only
+```
+
+Prevent automatic Homebrew changes while still running diagnostics:
+
+```bash
+./start-local.sh --no-install --check-only
+```
+
+Use another application port:
+
+```bash
+SERVER_PORT=8081 ./start-local.sh
+```
+
+Use different locally installed/pullable Ollama models:
+
+```bash
+RAG_CHAT_MODEL=my-chat-model \
+RAG_EMBEDDING_MODEL=my-embedding-model \
+./start-local.sh
+```
+
+Logs and PID files are written beneath `.run/`:
+
+```text
+.run/application.log
+.run/application.pid
+.run/ollama.log
+.run/ollama.pid
+```
+
+### What a successful script run guarantees
+
+When the script reports `SUCCESS`, it has proved that, at that moment:
+
+- Required local commands satisfy the project's minimum versions.
+- The Ollama server responds.
+- The configured embedding endpoint returned an embedding.
+- The configured chat endpoint returned a completion.
+- The complete clean Maven build and all tests passed.
+- The executable JAR has the expected Spring Boot contents.
+- Spring Boot started successfully and its health endpoint returned `UP`.
+
+No startup script can guarantee that a later hardware failure, loss of disk space, unsupported model, operating-system permission change, or future request-specific bug will never occur. This script therefore fails with diagnostics instead of claiming to handle an unknowable failure.
+
+### Deliberate safety limits
+
+The script does not:
+
+- Delete an existing SQLite database.
+- Delete Ollama models as a repair strategy.
+- Kill an unknown process using a required port.
+- Install Homebrew by piping an internet script into a shell.
+- Manage remote/cloud model providers; `start-local.sh` is intentionally for local Ollama.
+
+These limits prevent a convenience command from becoming destructive. If it stops, read the reported reason and `.run` logs rather than bypassing the check.
+
 ## Start the application: complete local procedure
+
+This section shows what the automated script performs and is useful when learning or isolating a failure.
 
 Use three terminal windows while learning the project:
 
