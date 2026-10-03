@@ -23,7 +23,7 @@ Controllers should remain thin. Do not place cosine math, SQL, provider JSON, or
 
 ## Running
 
-From the project root run `mvn package`, then `java -jar rag-application/target/rag-application-0.1.0-SNAPSHOT.jar`. See the root README for models, environment variables, curl examples, and troubleshooting.
+From the project root, run `./mvnw package` on macOS/Linux or `.\mvnw.cmd package` on Windows. Then run `java -jar rag-application/target/rag-application-0.1.0-SNAPSHOT.jar` (use backslashes or forward slashes on Windows). See the root [operating-system guide](../RUNNING-THE-PROJECT.md) for prerequisites, models, environment variables, API examples, and troubleshooting.
 
 ## Study topics
 

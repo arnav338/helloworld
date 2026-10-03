@@ -6,6 +6,15 @@ The project intentionally does **not** use LangChain, Spring AI, an Oracle servi
 
 If you understand conventional Spring Controller -> Service -> Repository applications, begin with [BACKEND-DEVELOPER-GUIDE.md](BACKEND-DEVELOPER-GUIDE.md). It maps every RAG component to familiar backend layers, traces both request flows, and explains exactly where V1/V2 implementations can be selected.
 
+## Start here
+
+| If you want to... | Read this guide |
+|---|---|
+| Install prerequisites and run on macOS, Linux, Windows, or WSL | [RUNNING-THE-PROJECT.md](RUNNING-THE-PROJECT.md) |
+| Understand useful scenarios and set up each one | [USE-CASES-AND-SETUP.md](USE-CASES-AND-SETUP.md) |
+| Understand the code as a Spring/backend developer | [BACKEND-DEVELOPER-GUIDE.md](BACKEND-DEVELOPER-GUIDE.md) |
+| Present the project formally | [PROJECT-TALKING-POINTS.md](PROJECT-TALKING-POINTS.md) |
+
 ## Current capabilities
 
 - Upload and index text-based PDFs.
@@ -114,9 +123,9 @@ Ollama is not mandatory only if you deliberately choose to configure another ser
 | Requirement | Minimum/project value | Why it is needed |
 |---|---|---|
 | Java JDK | Java 21 | Compiles and runs the Spring Boot application. A JRE alone is insufficient for Maven compilation. |
-| Maven | 3.9 or newer | Builds all eight modules, downloads Java dependencies, and runs tests. |
+| Maven | Bundled wrapper pins Maven 3.9.9 | Builds all eight modules, downloads Java dependencies, and runs tests. A separate Maven installation is optional. |
 | Ollama | Current local version, or another compatible server | Runs the embedding and chat models locally. |
-| `curl` | Any recent version | Used by the README examples to verify services and call the REST API. |
+| `curl` | Any recent version (manual examples only) | Used by the Unix-oriented README examples; the Windows startup script uses PowerShell `Invoke-RestMethod` instead. |
 | Free disk space | Several GB | Model files such as `llama2` are large. Exact size depends on the selected models. |
 
 The default application configuration expects:
@@ -143,13 +152,14 @@ Run:
 
 ```bash
 java -version
-mvn -version
+./mvnw -version              # macOS/Linux
+.\mvnw.cmd -version          # Windows PowerShell
 ```
 
 Expected results:
 
 - `java -version` reports version 21.
-- `mvn -version` reports Maven 3.9+ and shows that Maven itself is using Java 21.
+- The Maven Wrapper reports Maven 3.9.9 and shows that Maven itself is using Java 21.
 
 If Maven reports an older Java runtime even though Java 21 is installed, correct `JAVA_HOME` before building. On macOS, a temporary fix is:
 
@@ -157,7 +167,7 @@ If Maven reports an older Java runtime even though Java 21 is installed, correct
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 export PATH="$JAVA_HOME/bin:$PATH"
 java -version
-mvn -version
+./mvnw -version
 ```
 
 ### Install Ollama when it is missing
@@ -174,7 +184,7 @@ Alternatively, install the Ollama desktop application. Verify the CLI afterward:
 ollama --version
 ```
 
-If you use a different operating system, install Ollama using its platform-specific package and continue with the same server/model checks below.
+On Windows, the native startup script below installs or repairs Ollama through WinGet when required. You may also install Ollama manually and continue with the same server/model checks.
 
 ## One-time model setup
 
@@ -209,7 +219,9 @@ Important: a chat model is not a replacement for an embedding model. The applica
 
 ## Recommended: one-command fail-safe startup
 
-Manual commands remain documented below for learning and troubleshooting, but normal local use should start with:
+Manual commands remain documented below for learning and troubleshooting. Use the launcher for your operating system.
+
+### macOS and Linux
 
 ```bash
 cd /Users/arnavmalhotra/IdeaProjects/helloworld/mini-rag-engine
@@ -229,7 +241,7 @@ It performs these checks in order:
 7. Calls the real embedding and chat HTTP endpoints—not merely `ollama list`—to prove both models load and respond.
 8. If a model API fails, runs one `ollama pull` repair/verification and retests it.
 9. Validates the Maven project layout.
-10. Runs `mvn clean package`, including all tests.
+10. Runs a clean Maven package, including all tests (`mvn` on macOS/Linux and the pinned `mvnw.cmd` on Windows).
 11. Verifies that the output is an executable Spring Boot JAR containing `MiniRagApplication`.
 12. Refuses to kill an unrelated process if port 8080 or 11434 is occupied.
 13. Starts Spring Boot and waits for `/actuator/health` to return `UP`.
@@ -281,6 +293,82 @@ Logs and PID files are written beneath `.run/`:
 .run/ollama.log
 .run/ollama.pid
 ```
+
+### Native Windows 10/11
+
+The Bash script is not a native Windows program. Windows has an equivalent PowerShell implementation with the same safety checks and startup guarantees. It does not require WSL, Git Bash, Homebrew, or a separately installed Maven.
+
+Supported baseline:
+
+| Item | Windows requirement |
+|---|---|
+| Operating system | Windows 10 or Windows 11, x64 |
+| Shell | Windows PowerShell 5.1 or PowerShell 7+ |
+| Automatic prerequisite repair | WinGet, supplied by Microsoft App Installer |
+| Java | JDK 21; installed/repaired automatically through WinGet when allowed |
+| Maven | No global install; `mvnw.cmd` downloads the pinned Maven 3.9.9 distribution on first use |
+| Ollama | Installed/repaired automatically through WinGet when allowed |
+
+Open **Command Prompt or PowerShell**, move to the project root, and run:
+
+```powershell
+cd C:\path\to\mini-rag-engine
+.\start-local.cmd
+```
+
+`start-local.cmd` is the easiest entry point. It invokes `start-local.ps1` with an execution-policy bypass for that process only; it does not modify the machine's permanent PowerShell policy.
+
+PowerShell users can invoke the implementation directly:
+
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\start-local.ps1
+```
+
+Useful Windows modes:
+
+```powershell
+# Diagnose prerequisites, models, tests, and the JAR without starting Spring.
+.\start-local.cmd -CheckOnly
+
+# Start Spring in the background after every health check passes.
+.\start-local.cmd -Background
+
+# Diagnose only; never install Java or Ollama with WinGet.
+.\start-local.cmd -NoInstall -CheckOnly
+```
+
+Set configuration overrides in PowerShell before starting:
+
+```powershell
+$env:SERVER_PORT = '8081'
+$env:RAG_CHAT_MODEL = 'my-chat-model'
+$env:RAG_EMBEDDING_MODEL = 'my-embedding-model'
+.\start-local.cmd
+```
+
+The Windows script performs the same functional sequence as the Bash script, using native equivalents:
+
+| Bash/macOS operation | Native Windows operation |
+|---|---|
+| Homebrew prerequisite repair | WinGet package repair/install |
+| `mvn clean package` | `.\mvnw.cmd clean package` with pinned Maven 3.9.9 |
+| `lsof` port inspection | `Get-NetTCPConnection` and `Get-Process` |
+| `nohup` background process | PowerShell `Start-Process` |
+| Unix PID/log files | `.run\*.pid` and `.run\*-windows.log` |
+| `curl` JSON checks | `Invoke-RestMethod` |
+
+Automatic installation can display a Windows elevation/UAC prompt. Internet access is required on the first successful run to obtain Java/Ollama if absent, Maven itself, Java dependencies, and the two model packages. Later runtime is local. If WinGet is unavailable, install Microsoft App Installer or install Java 21 and Ollama manually, then rerun with `-NoInstall`.
+
+Windows manual build and launch equivalents are:
+
+```powershell
+.\mvnw.cmd clean package
+java -jar .\rag-application\target\rag-application-0.1.0-SNAPSHOT.jar
+```
+
+The SQLite path remains relative to the project root and resolves to `.\data\rag.db`. If the repository is used through WSL or Git Bash, `start-local.sh` can still be used inside that Unix environment, but `start-local.cmd` is recommended for native Windows.
+
+Windows 7/8 and 32-bit Windows are not compatibility targets: Java 21, current Ollama, and current WinGet are the controlling platform requirements.
 
 ### What a successful script run guarantees
 
@@ -390,7 +478,7 @@ The response should contain `choices[0].message.content`. The first request can 
 In Terminal 2, from the project root:
 
 ```bash
-mvn clean package
+./mvnw clean package
 ```
 
 This command:
@@ -443,7 +531,7 @@ The first startup creates the `data` directory and SQLite file automatically:
 Alternative development command:
 
 ```bash
-mvn -pl rag-application -am spring-boot:run
+./mvnw -pl rag-application -am spring-boot:run
 ```
 
 The packaged-JAR command is recommended for the first run because it proves that the complete distributable was built correctly.
@@ -649,7 +737,7 @@ For pgvector at scale, extend the abstraction deliberately so ranking can happen
 - Add a migration strategy before changing the SQLite schema in a released version.
 - Never log API keys, authorization headers, entire prompts, or document contents.
 - Pin dependency versions; review upgrades module by module.
-- Run `mvn clean test` from the root before committing.
+- Run `./mvnw clean test` (macOS/Linux) or `.\mvnw.cmd clean test` (Windows) from the root before committing.
 
 ## Troubleshooting
 
